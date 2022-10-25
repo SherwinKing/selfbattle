@@ -38,6 +38,7 @@ typedef struct ImageData {
 	glm::uvec2 size;
 } ImageData;
 
+// Ref: Based on Sherwin JIN's game 4 TextRenderer
 class ImageRenderer {
 private:
 	std::string font_file_path;
