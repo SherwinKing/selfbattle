@@ -77,6 +77,11 @@ void ImageRenderer::render_image(const ImageData & image_data, float x, float y)
 	uint32_t image_width = image_data.size.x;
 	uint32_t image_height = image_data.size.y;
 
+	float render_left = x;
+	float render_bottom = y;
+	float render_right = x + image_width * sx;
+	float render_top = y + image_height * sy;
+
 	// based on https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/text01_intro/text.cpp
 	glUseProgram(image_shader_program);
 
@@ -116,10 +121,10 @@ void ImageRenderer::render_image(const ImageData & image_data, float x, float y)
 
 
 	Point box[4] = {
-		{-1, -1, 0, 0},
-		{1, -1, 1, 0},
-		{-1, 1, 0, 1},
-		{1, 1, 1, 1},
+		{render_left, render_bottom, 0, 0},
+		{render_right, render_bottom, 1, 0},
+		{render_left, render_top, 0, 1},
+		{render_right, render_top, 1, 1},
 	};
 
 	// Draw the character on the screen
