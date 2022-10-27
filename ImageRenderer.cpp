@@ -64,23 +64,26 @@ ImageRenderer::ImageRenderer()
  : ImageRenderer(1920, 1080){}
 
 /**
- * Render text using the currently loaded font and currently set font size.
- * Rendering starts at coordinates (x, y), z is always 0.
- * The pixel coordinates that the FreeType2 library uses are scaled by (sx, sy).
+ * Render image whose center is at (x, y)
  * 
  * Based on a tutorial and its corresponding codes:
  * https://en.wikibooks.org/wiki/OpenGL_Programming/Modern_OpenGL_Tutorial_Text_Rendering_01
  * https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/text01_intro/text.cpp
  * Also used as reference: https://github.com/tangrams/harfbuzz-example/blob/master/src/hbshaper.h
  */
-void ImageRenderer::render_image(const ImageData & image_data, float x, float y) {
+void ImageRenderer::render_image(const ImageData & image_data, float x, float y, float rotation_degrees) {
 	uint32_t image_width = image_data.size.x;
 	uint32_t image_height = image_data.size.y;
 
-	float render_left = x;
-	float render_bottom = y;
-	float render_right = x + image_width * sx;
-	float render_top = y + image_height * sy;
+	float render_left = x - image_width * sx / 2.0f;
+	float render_bottom = y - image_height * sy / 2.0f;
+	float render_right = x + image_width * sx / 2.0f;
+	float render_top = y + image_height * sy / 2.0f;
+	glm::vec4 bottom_left = glm::vec4(render_left, render_bottom, 0.0f, 1.0f);
+	glm::vec4 bottom_right = glm::vec4(render_right, render_bottom, 1.0f, 1.0f);
+	glm::vec4 top_left = glm::vec4(render_left, render_top, 1.0f, 1.0f);
+	glm::vec4 top_right = glm::vec4(render_right, render_top, 0.0f, 1.0f);
+	glm::vec4 center = glm::vec4(x, y, 0.0f, 1.0f);
 
 	// based on https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/text01_intro/text.cpp
 	glUseProgram(image_shader_program);
@@ -116,15 +119,29 @@ void ImageRenderer::render_image(const ImageData & image_data, float x, float y)
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
+
 	// Upload the "bitmap", which contains an 32-bit rgba image
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, image_data.pixels.data());
 
+	// Rotate the image to render
+	if (rotation_degrees != 0) {
+		glm::mat4 center_rotation_mat = glm::translate(glm::mat4(1.0f), glm::vec3(-center));
+		center_rotation_mat = glm::scale(center_rotation_mat, glm::vec3(sx, sy, 1.0f));
+		center_rotation_mat = glm::rotate(center_rotation_mat, glm::radians(rotation_degrees), glm::vec3(0.0, 0.0, 1.0));
+		center_rotation_mat = glm::scale(center_rotation_mat, glm::vec3(1.0f/sx, 1.0f/sy, 1.0f));
+		center_rotation_mat = glm::translate(center_rotation_mat, glm::vec3(center));
+
+		bottom_left = center_rotation_mat * bottom_left;
+		bottom_right = center_rotation_mat * bottom_right;
+		top_right = center_rotation_mat * top_right;
+		top_left = center_rotation_mat * top_left;
+	}
 
 	Point box[4] = {
-		{render_left, render_bottom, 0, 0},
-		{render_right, render_bottom, 1, 0},
-		{render_left, render_top, 0, 1},
-		{render_right, render_top, 1, 1},
+		{bottom_left[0], bottom_left[1], 0, 0},
+		{bottom_right[0], bottom_right[1], 1, 0},
+		{top_left[0], top_left[1], 0, 1},
+		{top_right[0], top_right[1], 1, 1},
 	};
 
 	// Draw the character on the screen
