@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 						bool handled_message;
 						do {
 							handled_message = false;
-							if (player.controls.recv_controls_message(c)) handled_message = true;
+							if (player.recv_message(c)) handled_message = true;
 							//TODO: extend for more message types as needed
 						} while (handled_message);
 					} catch (std::exception const &e) {

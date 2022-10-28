@@ -143,7 +143,7 @@ const client_names = [
 	maek.CPP('Sound.cpp'),
 	maek.CPP('load_wav.cpp'),
 	maek.CPP('load_opus.cpp'),
-	maek.CPP('GameLogic.cpp'),
+	
 ];
 
 const server_names = [
@@ -165,7 +165,9 @@ const common_names = [
 	maek.CPP('GL.cpp'),
 	maek.CPP('Load.cpp'),
 	maek.CPP('Connection.cpp'),
-	maek.CPP('hex_dump.cpp')
+	maek.CPP('hex_dump.cpp'),
+	maek.CPP('ImageRenderer.cpp')
+
 ];
 
 const show_meshes_names = [

@@ -8,93 +8,174 @@
 
 #include <glm/gtx/norm.hpp>
 
-void Player::Controls::send_controls_message(Connection *connection_) const {
-	assert(connection_);
-	auto &connection = *connection_;
-
-	uint32_t size = 5;
-	connection.send(Message::C2S_Controls);
-	connection.send(uint8_t(size));
-	connection.send(uint8_t(size >> 8));
-	connection.send(uint8_t(size >> 16));
-
-	auto send_button = [&](Button const &b) {
-		if (b.downs & 0x80) {
-			std::cerr << "Wow, you are really good at pressing buttons!" << std::endl;
-		}
-		connection.send(uint8_t( (b.pressed ? 0x80 : 0x00) | (b.downs & 0x7f) ) );
-	};
-
-	send_button(left);
-	send_button(right);
-	send_button(up);
-	send_button(down);
-	send_button(jump);
-}
-
-bool Player::Controls::recv_controls_message(Connection *connection_) {
-	assert(connection_);
-	auto &connection = *connection_;
-
-	auto &recv_buffer = connection.recv_buffer;
-
-	//expecting [type, size_low0, size_mid8, size_high8]:
-	if (recv_buffer.size() < 4) return false;
-	if (recv_buffer[0] != uint8_t(Message::C2S_Controls)) return false;
-	uint32_t size = (uint32_t(recv_buffer[3]) << 16)
-	              | (uint32_t(recv_buffer[2]) << 8)
-	              |  uint32_t(recv_buffer[1]);
-	if (size != 5) throw std::runtime_error("Controls message with size " + std::to_string(size) + " != 5!");
-	
-	//expecting complete message:
-	if (recv_buffer.size() < 4 + size) return false;
-
-	auto recv_button = [](uint8_t byte, Button *button) {
-		button->pressed = (byte & 0x80);
-		uint32_t d = uint32_t(button->downs) + uint32_t(byte & 0x7f);
-		if (d > 255) {
-			std::cerr << "got a whole lot of downs" << std::endl;
-			d = 255;
-		}
-		button->downs = uint8_t(d);
-	};
-
-	recv_button(recv_buffer[4+0], &left);
-	recv_button(recv_buffer[4+1], &right);
-	recv_button(recv_buffer[4+2], &up);
-	recv_button(recv_buffer[4+3], &down);
-	recv_button(recv_buffer[4+4], &jump);
-
-	//delete message from buffer:
-	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
-
-	return true;
-}
-
 
 //-----------------------------------------
 
 Game::Game() : mt(0x15466666) {
 }
 
+void Player::set_position(float new_x, float new_y) {
+	c.x = new_x;
+	c.y = new_y;
+}
+
+const ImageData& Player::get_player_sprite() {
+	///TODO: Do stuff with rotations later
+	return sprites["player0"];
+}
+
+bool Player::recv_message(Connection *connection){
+	return true;
+}
+
+void Player::world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y) {
+	float w = static_cast<float>(screen_size.x);
+	float h = static_cast<float>(screen_size.y);
+
+	// Between -1 and 1	
+	screen_x = ((world_x - c.x) / w) * 2.f;	
+	screen_y = ((world_y - c.y) / h) * 2.f;
+}
+
+void Player::screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y) {
+	float w = static_cast<float>(screen_size.x);
+	float h = static_cast<float>(screen_size.y);
+
+	float center_x = w / 2.f;
+	float center_y = h / 2.f;
+	world_x = c.x + (screen_x - center_x); 
+	world_y = c.y - (screen_y - center_y);
+}
+
+bool Entity::collide(Entity& other) {
+	return !((other.box.hi_x < box.lo_x) || (box.hi_x < other.box.lo_x) || 
+			 (other.box.hi_y < box.lo_y) || (box.hi_y < other.box.lo_y)); 
+}
+
+void Entity::set_box(uint w, uint h) {
+	set_box(static_cast<float>(w), static_cast<float>(h));
+}
+
+void Entity::set_box(float w, float h) {
+	float halfw = w / 2.f;
+	float halfh = h / 2.f;
+	box.lo_x = x - halfw; 
+	box.hi_x = x + halfw;
+	box.lo_y = y - halfh;
+	box.hi_y = y + halfh;
+}
+
+void Entity::move(float dx, float dy) {
+	x += dx;	
+	y += dy;
+	box.update_box(dx, dy);
+}
+
+void BoundingBox::update_box(float dx, float dy) {
+	lo_x += dx;	
+	hi_x += dx;
+	lo_y += dy;
+	hi_y += dy;
+}
+
+void Player::move_player(float dx, float dy) {
+	c.move(dx, dy);
+	for (auto mapobj : map->map_objects)
+	{
+		if (c.collide(*mapobj)) {
+			c.move(-dx, -dy);	
+			return;
+		}
+	}
+	for (auto clone : clones) {
+		if (c.collide(*clone)) {
+			c.move(-dx, -dy);
+			return;
+		}
+	}	
+	for (auto clone : enemy_clones) {
+		if (c.collide(*clone)) {
+			c.move(-dx, -dy);
+			return;
+		}
+	}
+}
+
 Player *Game::spawn_player() {
 	players.emplace_back();
 	Player &player = players.back();
 
-	//random point in the middle area of the arena:
-	player.position.x = glm::mix(ArenaMin.x + 2.0f * PlayerRadius, ArenaMax.x - 2.0f * PlayerRadius, 0.4f + 0.2f * mt() / float(mt.max()));
-	player.position.y = glm::mix(ArenaMin.y + 2.0f * PlayerRadius, ArenaMax.y - 2.0f * PlayerRadius, 0.4f + 0.2f * mt() / float(mt.max()));
-
-	do {
-		player.color.r = mt() / float(mt.max());
-		player.color.g = mt() / float(mt.max());
-		player.color.b = mt() / float(mt.max());
-	} while (player.color == glm::vec3(0.0f));
-	player.color = glm::normalize(player.color);
-
-	player.name = "Player " + std::to_string(next_player_number++);
-
 	return &player;
+}
+
+
+void Player::draw(glm::uvec2 const &screen_size) {
+	renderer.resize(screen_size.x, screen_size.y);
+	float screen_x;
+	float screen_y;
+	float lower_x;
+	float lower_y;
+
+	const ImageData& player_sprite = get_player_sprite();	
+
+	c.get_lower_left(lower_x, lower_y);
+	world_to_opengl(lower_x, lower_y, screen_size, screen_x, screen_y);	
+	renderer.render_image(player_sprite, screen_x, screen_y);
+
+	for (auto bullet : bullets) {
+		bullet->get_lower_left(lower_x, lower_y);	
+		world_to_opengl(lower_x, lower_y ,screen_size, screen_x, screen_y);	
+		renderer.render_image(*(bullet->sprite), screen_x, screen_y);
+	}
+
+	for (auto clone : clones) {
+		clone->get_lower_left(lower_x, lower_y);	
+		world_to_opengl(lower_x, lower_y ,screen_size, screen_x, screen_y);	
+		renderer.render_image(*(clone->sprite), screen_x, screen_y);
+	}
+
+	for (auto mapobj : map->map_objects) {
+		mapobj->get_lower_left(lower_x, lower_y);	
+		world_to_opengl(lower_x, lower_y ,screen_size, screen_x, screen_y);	
+		renderer.render_image(*(mapobj->sprite), screen_x, screen_y);
+	}
+}
+
+void Entity::get_lower_left(float& lower_left_x, float& lower_left_y) {
+	lower_left_x = box.lo_x;	
+	lower_left_y = box.lo_y;
+}
+
+void Bullet::move_bullet(float elapsed) {
+	this->move(elapsed * velo.x, elapsed * velo.y);	
+	lifetime += elapsed;
+}
+
+void Player::shoot (float screen_x, float screen_y, glm::uvec2 const &window_size) {
+	float world_x, world_y;
+	screen_to_world(screen_x, screen_y, window_size, world_x, world_y);		
+
+	glm::vec2 shoot_velo;
+	shoot_velo.x = world_x - c.x;
+	shoot_velo.y = world_y - c.y;
+	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
+
+	ImageData *bullet_sprite = &(sprites["bullet"]);
+	std::shared_ptr<Bullet> bullet = std::make_shared<Bullet>(c.x, c.y, bullet_sprite, shoot_velo); 
+	bullets.emplace_back(bullet);	
+	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
+
+	bullet->move_bullet(amount_to_move);
+} 
+
+void Player::place_clone(float screen_x, float screen_y, glm::uvec2 const &window_size) {
+	float world_x, world_y;
+	screen_to_world(screen_x, screen_y, window_size, world_x, world_y);	
+
+	ImageData *clone_sprite = &(sprites["clone"]);
+	std::shared_ptr<Clone> clone = std::make_shared<Clone>(world_x, world_y, clone_sprite); 
+	
+	clones.emplace_back(clone);	
 }
 
 void Game::remove_player(Player *player) {
@@ -109,172 +190,143 @@ void Game::remove_player(Player *player) {
 	assert(found);
 }
 
+bool Character::take_damage(float damage) {
+	hp -= damage;
+	return hp < 0.f;
+}
+
+bool Clone::take_damage(float damage) {
+	hp -= damage;
+	return hp < 0.f;
+}
+
+std::shared_ptr<Map> Player::create_map() {
+	std::shared_ptr<Map> new_map = std::make_shared<Map>();	
+	std::vector<std::shared_ptr<MapObject>>& objs = new_map->map_objects;
+	ImageData *wall_sprite = &(sprites["wall"]);
+	std::array<std::pair<float, float>, 3> wall_positions = {
+		std::pair(100.f, 340.f),
+		std::pair(250.f, 200.f),
+		std::pair(-100.f, -100.f),
+	};
+	for (auto p : wall_positions) {
+		objs.emplace_back(std::make_shared<MapObject>(p.first, p.second, wall_sprite));	
+	}
+	return new_map;
+}
+
+void Player::update_place_clones(float elapsed) {
+	place_time_elapsed += elapsed;	
+	if (place_time_elapsed > PLACE_CLONE_PHASE_DURATION) {
+		state = FindClones;
+		return;
+	}
+}
+
+void Player::update_find_clones(float elapsed) {
+	find_time_elapsed += elapsed;		
+	if (find_time_elapsed > FIND_CLONE_PHASE_DURATION) {
+		state = KillClones;
+		return;
+	}
+}
+
+void Player::update_kill_clones(float elapsed) {
+	kill_time_elapsed += elapsed;	
+	if (kill_time_elapsed > KILL_CLONE_PHASE_DURATION) {
+		printf("Time is up!\n");
+		state = GameOver;
+		return;
+	}
+	if (clones.size() == 0) {
+		printf("You Win!\n");
+		state = GameOver;
+		return;
+	}
+	// Move everything
+	std::vector<std::shared_ptr<Clone>> new_clones;
+	std::vector<std::shared_ptr<Clone>> new_enemy_clones;
+	std::vector<std::shared_ptr<Bullet>> temp_bullets;
+	std::unordered_set<std::shared_ptr<Bullet>> new_bullets;
+	for (auto bullet : bullets) {
+		bullet->move_bullet(elapsed);
+		if (bullet->lifetime <= BULLET_LIFETIME) {
+			temp_bullets.emplace_back(bullet);
+		}
+	}
+	bullets = temp_bullets;
+	for (auto clone : clones) {
+		bool add = true;
+		temp_bullets.clear();
+		for (auto bullet : bullets) {
+			if (bullet->collide(*clone)) {
+				printf("colliding");
+				if (clone->take_damage(BULLET_DAMAGE)) {
+					add = false;
+					///TODO: clone killed
+				}	
+			}
+			else {
+				temp_bullets.emplace_back(bullet);
+			}
+		}
+		bullets = temp_bullets;
+		if (add) {
+			new_clones.emplace_back(clone);
+		}
+	}
+
+	for (auto enemy_clone : enemy_clones) {
+		bool add = true;
+		temp_bullets.clear();
+		for (auto bullet : temp_bullets) {
+			if (bullet->collide(*enemy_clone)) {
+				if (enemy_clone->take_damage(BULLET_DAMAGE)) {
+					add = false;
+					///TODO: enemy clone killed
+				}	
+			}
+			else {
+				temp_bullets.emplace_back(bullet);
+			}
+			
+		}
+		bullets = temp_bullets;
+		if (add) {
+			new_enemy_clones.emplace_back(enemy_clone);
+		}
+	}
+
+	// Update clones
+	clones = new_clones;
+	enemy_clones = new_enemy_clones;
+
+}
+void Player::update(float elapsed) {
+	switch(state) {
+		case PlaceClones:
+			update_place_clones(elapsed);
+			return;
+		case FindClones:
+			update_find_clones(elapsed);
+			return;
+		case KillClones:	
+			update_kill_clones(elapsed);
+			return;
+	}
+}
+
 void Game::update(float elapsed) {
 	//position/velocity update:
-	for (auto &p : players) {
-		glm::vec2 dir = glm::vec2(0.0f, 0.0f);
-		if (p.controls.left.pressed) dir.x -= 1.0f;
-		if (p.controls.right.pressed) dir.x += 1.0f;
-		if (p.controls.down.pressed) dir.y -= 1.0f;
-		if (p.controls.up.pressed) dir.y += 1.0f;
-
-		if (dir == glm::vec2(0.0f)) {
-			//no inputs: just drift to a stop
-			float amt = 1.0f - std::pow(0.5f, elapsed / (PlayerAccelHalflife * 2.0f));
-			p.velocity = glm::mix(p.velocity, glm::vec2(0.0f,0.0f), amt);
-		} else {
-			//inputs: tween velocity to target direction
-			dir = glm::normalize(dir);
-
-			float amt = 1.0f - std::pow(0.5f, elapsed / PlayerAccelHalflife);
-
-			//accelerate along velocity (if not fast enough):
-			float along = glm::dot(p.velocity, dir);
-			if (along < PlayerSpeed) {
-				along = glm::mix(along, PlayerSpeed, amt);
-			}
-
-			//damp perpendicular velocity:
-			float perp = glm::dot(p.velocity, glm::vec2(-dir.y, dir.x));
-			perp = glm::mix(perp, 0.0f, amt);
-
-			p.velocity = dir * along + glm::vec2(-dir.y, dir.x) * perp;
-		}
-		p.position += p.velocity * elapsed;
-
-		//reset 'downs' since controls have been handled:
-		p.controls.left.downs = 0;
-		p.controls.right.downs = 0;
-		p.controls.up.downs = 0;
-		p.controls.down.downs = 0;
-		p.controls.jump.downs = 0;
-	}
-
-	//collision resolution:
-	for (auto &p1 : players) {
-		//player/player collisions:
-		for (auto &p2 : players) {
-			if (&p1 == &p2) break;
-			glm::vec2 p12 = p2.position - p1.position;
-			float len2 = glm::length2(p12);
-			if (len2 > (2.0f * PlayerRadius) * (2.0f * PlayerRadius)) continue;
-			if (len2 == 0.0f) continue;
-			glm::vec2 dir = p12 / std::sqrt(len2);
-			//mirror velocity to be in separating direction:
-			glm::vec2 v12 = p2.velocity - p1.velocity;
-			glm::vec2 delta_v12 = dir * glm::max(0.0f, -1.75f * glm::dot(dir, v12));
-			p2.velocity += 0.5f * delta_v12;
-			p1.velocity -= 0.5f * delta_v12;
-		}
-		//player/arena collisions:
-		if (p1.position.x < ArenaMin.x + PlayerRadius) {
-			p1.position.x = ArenaMin.x + PlayerRadius;
-			p1.velocity.x = std::abs(p1.velocity.x);
-		}
-		if (p1.position.x > ArenaMax.x - PlayerRadius) {
-			p1.position.x = ArenaMax.x - PlayerRadius;
-			p1.velocity.x =-std::abs(p1.velocity.x);
-		}
-		if (p1.position.y < ArenaMin.y + PlayerRadius) {
-			p1.position.y = ArenaMin.y + PlayerRadius;
-			p1.velocity.y = std::abs(p1.velocity.y);
-		}
-		if (p1.position.y > ArenaMax.y - PlayerRadius) {
-			p1.position.y = ArenaMax.y - PlayerRadius;
-			p1.velocity.y =-std::abs(p1.velocity.y);
-		}
-	}
 
 }
 
 
 void Game::send_state_message(Connection *connection_, Player *connection_player) const {
-	assert(connection_);
-	auto &connection = *connection_;
-
-	connection.send(Message::S2C_State);
-	//will patch message size in later, for now placeholder bytes:
-	connection.send(uint8_t(0));
-	connection.send(uint8_t(0));
-	connection.send(uint8_t(0));
-	size_t mark = connection.send_buffer.size(); //keep track of this position in the buffer
-
-
-	//send player info helper:
-	auto send_player = [&](Player const &player) {
-		connection.send(player.position);
-		connection.send(player.velocity);
-		connection.send(player.color);
 	
-		//NOTE: can't just 'send(name)' because player.name is not plain-old-data type.
-		//effectively: truncates player name to 255 chars
-		uint8_t len = uint8_t(std::min< size_t >(255, player.name.size()));
-		connection.send(len);
-		connection.send_buffer.insert(connection.send_buffer.end(), player.name.begin(), player.name.begin() + len);
-	};
-
-	//player count:
-	connection.send(uint8_t(players.size()));
-	if (connection_player) send_player(*connection_player);
-	for (auto const &player : players) {
-		if (&player == connection_player) continue;
-		send_player(player);
-	}
-
-	//compute the message size and patch into the message header:
-	uint32_t size = uint32_t(connection.send_buffer.size() - mark);
-	connection.send_buffer[mark-3] = uint8_t(size);
-	connection.send_buffer[mark-2] = uint8_t(size >> 8);
-	connection.send_buffer[mark-1] = uint8_t(size >> 16);
 }
 
 bool Game::recv_state_message(Connection *connection_) {
-	assert(connection_);
-	auto &connection = *connection_;
-	auto &recv_buffer = connection.recv_buffer;
-
-	if (recv_buffer.size() < 4) return false;
-	if (recv_buffer[0] != uint8_t(Message::S2C_State)) return false;
-	uint32_t size = (uint32_t(recv_buffer[3]) << 16)
-	              | (uint32_t(recv_buffer[2]) << 8)
-	              |  uint32_t(recv_buffer[1]);
-	uint32_t at = 0;
-	//expecting complete message:
-	if (recv_buffer.size() < 4 + size) return false;
-
-	//copy bytes from buffer and advance position:
-	auto read = [&](auto *val) {
-		if (at + sizeof(*val) > size) {
-			throw std::runtime_error("Ran out of bytes reading state message.");
-		}
-		std::memcpy(val, &recv_buffer[4 + at], sizeof(*val));
-		at += sizeof(*val);
-	};
-
-	players.clear();
-	uint8_t player_count;
-	read(&player_count);
-	for (uint8_t i = 0; i < player_count; ++i) {
-		players.emplace_back();
-		Player &player = players.back();
-		read(&player.position);
-		read(&player.velocity);
-		read(&player.color);
-		uint8_t name_len;
-		read(&name_len);
-		//n.b. would probably be more efficient to directly copy from recv_buffer, but I think this is clearer:
-		player.name = "";
-		for (uint8_t n = 0; n < name_len; ++n) {
-			char c;
-			read(&c);
-			player.name += c;
-		}
-	}
-
-	if (at != size) throw std::runtime_error("Trailing data in state message.");
-
-	//delete message from buffer:
-	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
 
 	return true;
 }

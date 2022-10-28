@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Mode.hpp"
 
 #include "Connection.hpp"
@@ -19,8 +21,7 @@ struct PlayMode : Mode {
 
 	//----- game state -----
 
-	//input tracking for local player:
-	Player::Controls controls;
+	Player player;
 
 	//latest game state (from server):
 	Game game;
