@@ -36,6 +36,20 @@ bool Entity::collide(Entity& other) {
 			 (other.box.hi_y < box.lo_y) || (box.hi_y < other.box.lo_y)); 
 }
 
+ImageData *Entity::get_sprite(){
+	return this->sprite;
+}
+
+bool Character::take_damage(float damage) {
+	hp -= damage;
+	return hp < 0.f;
+}
+
+bool Clone::take_damage(float damage) {
+	hp -= damage;
+	return hp < 0.f;
+}
+
 void Bullet::move_bullet(float elapsed) {
 	this->move(elapsed * velo.x, elapsed * velo.y);	
 	lifetime += elapsed;

@@ -8,10 +8,6 @@
 
 #include <glm/glm.hpp>
 
-#include <string>
-#include <list>
-#include <random>
-
 #include <stdint.h>
 #include <list>
 #include <array>
@@ -24,7 +20,6 @@
 #include <cassert>
 #include <random>
 
-#include <string>
 #include <iostream>
 #include <fstream>
 
@@ -53,36 +48,6 @@ enum GameState  {
 
 struct Player {
     Player() = default;
-
-	// Both the client and the server have a "Player" to send and receive stuff
-	// But we really only need to do all the logic stuff and load textures
-	// for the Player objects that clients have
-	void init() {
-		/// @brief  TODO: move this somewhere else
-		// I originally had this at the top of the file but this was giving issues with 
-		// the make and I didn't have the time/couldn't be bothered to spend hours trying
-		// to figure out why it was doing this, so i just moved it here for now.
-		constexpr uint32_t NUM_SPRITES = 4;
-		std::array<std::pair<const char *, const char *>, NUM_SPRITES> sprite_paths = {
-			std::pair("player0", "sprites/test.png"),
-			std::pair("clone", "sprites/clone.png"),
-			std::pair("wall", "sprites/wall.png"),
-			std::pair("bullet", "sprites/bullet.png")	
-		};
-		
-		for (size_t i = 0; i < NUM_SPRITES; ++i) {
-            const auto& p = sprite_paths[i];
-            ImageData s;
-            load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin); 
-            sprites.emplace(p.first, s);
-	    }
-		state = PlaceClones;
-		c.init(PLAYER1_STARTING_X, PLAYER2_STARTING_Y);
-		ImageData& player_sprite = sprites["player0"];
-		c.set_box(player_sprite.size.x, player_sprite.size.y);
-
-		common_data.map_objects = create_map();
-	}
 
 	void place_clone(float world_x, float world_y);
 	void shoot (float world_x, float world_y); 
@@ -123,17 +88,8 @@ struct Player {
 	uint32_t ups = 0;
 	uint32_t downs = 0;
 
-    // Map map;
-    ///TODO:
-    // 2nd element is whatever we need for drawing sprites @SHERWIN
-    // load_png gave us a std::vector< glm::u8vec4 > so using that for now
-    std::unordered_map<std::string, ImageData> sprites;
-
-
 
 	private:
-		std::vector<MapObject> create_map();
-		const ImageData& get_player_sprite();
 
 		void update_place_clones(float elapsed);
 		void update_find_clones(float elapsed);
@@ -170,6 +126,8 @@ struct Game {
 	inline static constexpr float PlayerSpeed = 2.0f;
 	inline static constexpr float PlayerAccelHalflife = 0.25f;
 	
+	std::vector<MapObject> create_map();
+	CommonData common_data;
 
 	//---- communication helpers ----
 

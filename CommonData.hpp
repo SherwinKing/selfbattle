@@ -25,13 +25,24 @@ constexpr float KILL_CLONE_PHASE_DURATION = 30.f;
 
 constexpr uint32_t NUM_CLONES = 2;
 
+
+constexpr uint32_t NUM_SPRITES = 4;
+enum SPRITE {
+    player0 = 0,
+    clone = 1,
+    wall = 2,
+    bullet = 3,
+};
+
 struct MapObject;
 struct Bullet;
 struct Clone;
+struct ImageData;
 
 struct CommonData {
     std::vector<MapObject> map_objects;
     std::vector<Bullet> bullets;
 	std::vector<Clone> clones;
 	std::vector<Clone> enemy_clones;
+    std::vector<ImageData> sprites;
 };

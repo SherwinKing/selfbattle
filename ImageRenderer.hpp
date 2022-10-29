@@ -36,6 +36,7 @@
 typedef struct ImageData {
 	std::vector<glm::u8vec4> pixels;
 	glm::uvec2 size;
+	uint32_t sprite_index;
 } ImageData;
 
 // Ref: Based on Sherwin JIN's game 4 TextRenderer

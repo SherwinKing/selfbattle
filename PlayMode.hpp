@@ -27,6 +27,7 @@ struct PlayMode : Mode {
 	ImageRenderer renderer;
 	CommonData common_data;
 	Player player;
+	Character c;
 
 	//latest game state (from server):
 	Game game;

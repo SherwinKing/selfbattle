@@ -12,7 +12,8 @@
 #include <array>
 
 PlayMode::PlayMode(Client &client_) : client(client_) {
-	player.init();
+	// player.init();
+	game.common_data = common_data;
 	player.common_data = common_data;
 }
 
@@ -79,6 +80,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 void PlayMode::update(float elapsed) {
 	player.update(elapsed);
+	c = player.c;
 	/*
 	//send/receive data:
 	client.poll([this](Connection *c, Connection::Event event){
@@ -130,34 +132,34 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
 	
-	// float screen_x;
-	// float screen_y;
-	// float lower_x;
-	// float lower_y;
+	float screen_x;
+	float screen_y;
+	float lower_x;
+	float lower_y;
 
-	// const ImageData& player_sprite = player.get_player_sprite();	
+	const ImageData *character_sprite = c.get_sprite();	
 
-	// player.c.get_lower_left(lower_x, lower_y);
-	// world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);	
-	// renderer.render_image(player_sprite, screen_x, screen_y);
+	c.get_lower_left(lower_x, lower_y);
+	world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);	
+	renderer.render_image(*character_sprite, screen_x, screen_y);
 
-	// for (auto bullet : common_data.bullets) {
-	// 	bullet->get_lower_left(lower_x, lower_y);	
-	// 	world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
-	// 	renderer.render_image(*(bullet->sprite), screen_x, screen_y);
-	// }
+	for (auto bullet : common_data.bullets) {
+		bullet.get_lower_left(lower_x, lower_y);	
+		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
+		renderer.render_image(*(bullet.sprite), screen_x, screen_y);
+	}
 
-	// for (auto clone : common_data.clones) {
-	// 	clone->get_lower_left(lower_x, lower_y);	
-	// 	world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
-	// 	renderer.render_image(*(clone->sprite), screen_x, screen_y);
-	// }
+	for (auto clone : common_data.clones) {
+		clone.get_lower_left(lower_x, lower_y);	
+		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
+		renderer.render_image(*(clone.sprite), screen_x, screen_y);
+	}
 
-	// for (auto mapobj : common_data.map_objects) {
-	// 	mapobj->get_lower_left(lower_x, lower_y);	
-	// 	world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
-	// 	renderer.render_image(*(mapobj->sprite), screen_x, screen_y);
-	// }
+	for (auto mapobj : common_data.map_objects) {
+		mapobj.get_lower_left(lower_x, lower_y);	
+		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
+		renderer.render_image(*(mapobj.sprite), screen_x, screen_y);
+	}
 
 	GL_ERRORS();
 }

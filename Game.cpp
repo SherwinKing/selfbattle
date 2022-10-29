@@ -12,6 +12,27 @@
 //-----------------------------------------
 
 Game::Game() : mt(0x15466666) {
+		std::array<std::pair<uint32_t, const char *>, NUM_SPRITES> sprite_paths = {
+			std::pair(player0, "sprites/test.png"),
+			std::pair(clone, "sprites/clone.png"),
+			std::pair(wall, "sprites/wall.png"),
+			std::pair(bullet, "sprites/bullet.png")	
+		};
+		
+		for (size_t i = 0; i < NUM_SPRITES; ++i) {
+            const auto& p = sprite_paths[i];
+            ImageData s;
+            load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin);
+			s.sprite_index = i;
+            common_data.sprites.emplace_back(s);
+	    }
+		// TODO: implement this
+		// state = PlaceClones;
+		// c.init(PLAYER1_STARTING_X, PLAYER1_STARTING_Y);
+		// ImageData& player_sprite = sprites["player0"];
+		// c.set_box(player_sprite.size.x, player_sprite.size.y);
+
+		common_data.map_objects = create_map();
 }
 
 void Player::set_position(float new_x, float new_y) {
@@ -19,36 +40,30 @@ void Player::set_position(float new_x, float new_y) {
 	c.y = new_y;
 }
 
-const ImageData& Player::get_player_sprite() {
-	///TODO: Do stuff with rotations later
-	return sprites["player0"];
-}
-
 bool Player::recv_message(Connection *connection){
 	return true;
 }
 
 void Player::move_player(float dx, float dy) {
-	c.move(dx, dy);
+	// do nothing if we're running to an obstacle
 	for (auto mapobj : common_data.map_objects)
 	{
 		if (c.collide(mapobj)) {
-			c.move(-dx, -dy);	
 			return;
 		}
 	}
 	for (auto clone : common_data.clones) {
 		if (c.collide(clone)) {
-			c.move(-dx, -dy);
 			return;
 		}
 	}	
 	for (auto clone : common_data.enemy_clones) {
 		if (c.collide(clone)) {
-			c.move(-dx, -dy);
 			return;
 		}
 	}
+
+	c.move(dx, dy);
 }
 
 Player *Game::spawn_player() {
@@ -65,7 +80,7 @@ void Player::shoot (float world_x, float world_y) {
 	shoot_velo.y = world_y - c.y;
 	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
 
-	ImageData *bullet_sprite = &(sprites["bullet"]);
+	ImageData *bullet_sprite = &(common_data.sprites[bullet]);
 	Bullet bullet = Bullet(c.x, c.y, bullet_sprite, shoot_velo); 
 	common_data.bullets.emplace_back(bullet);	
 	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
@@ -74,7 +89,7 @@ void Player::shoot (float world_x, float world_y) {
 } 
 
 void Player::place_clone(float world_x, float world_y) {
-	ImageData *clone_sprite = &(sprites["clone"]);
+	ImageData *clone_sprite = &(common_data.sprites[clone]);
 	Clone clone = Clone(world_x, world_y, clone_sprite); 
 	
 	common_data.clones.emplace_back(clone);	
@@ -92,19 +107,9 @@ void Game::remove_player(Player *player) {
 	assert(found);
 }
 
-bool Character::take_damage(float damage) {
-	hp -= damage;
-	return hp < 0.f;
-}
-
-bool Clone::take_damage(float damage) {
-	hp -= damage;
-	return hp < 0.f;
-}
-
-std::vector<MapObject> Player::create_map() {
+std::vector<MapObject> Game::create_map() {
 	std::vector<MapObject> objs;
-	ImageData *wall_sprite = &(sprites["wall"]);
+	ImageData *wall_sprite = &(common_data.sprites[wall]);
 	std::array<std::pair<float, float>, 3> wall_positions = {
 		std::pair(100.f, 340.f),
 		std::pair(250.f, 200.f),

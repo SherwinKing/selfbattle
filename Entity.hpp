@@ -29,6 +29,7 @@ struct Entity {
 	void move(float dx, float dy);
 	void get_lower_left(float& lower_left_x, float& lower_left_y);
 	bool collide(Entity& other);
+	ImageData *get_sprite();
 };
 
 struct MapObject : Entity {
