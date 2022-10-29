@@ -4,6 +4,7 @@
 
 #include "Connection.hpp"
 #include "Game.hpp"
+#include "ImageRenderer.hpp"
 
 #include <glm/glm.hpp>
 
@@ -19,8 +20,12 @@ struct PlayMode : Mode {
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
-	//----- game state -----
+	void world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y);
+	void screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y);
 
+	//----- game state -----
+	ImageRenderer renderer;
+	CommonData common_data;
 	Player player;
 
 	//latest game state (from server):

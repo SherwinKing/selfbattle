@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <vector>
 
 constexpr float CLONE_STARTING_HEALTH = 50.f;
 constexpr float PLAYER_STARTING_HEALTH = 100.f;
@@ -23,3 +24,14 @@ constexpr float KILL_CLONE_PHASE_DURATION = 30.f;
 
 
 constexpr uint32_t NUM_CLONES = 2;
+
+struct MapObject;
+struct Bullet;
+struct Clone;
+
+struct CommonData {
+    std::vector<MapObject> map_objects;
+    std::vector<Bullet> bullets;
+	std::vector<Clone> clones;
+	std::vector<Clone> enemy_clones;
+};

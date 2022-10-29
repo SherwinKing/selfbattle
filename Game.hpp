@@ -4,6 +4,7 @@
 #include "data_path.hpp"
 #include "load_save_png.hpp"
 #include "Entity.hpp"
+#include "CommonData.hpp"
 
 #include <glm/glm.hpp>
 
@@ -50,11 +51,6 @@ enum GameState  {
 	GameOver
 };
 
-
-struct Map {
-	std::vector<std::shared_ptr<MapObject>> map_objects;
-};
-
 struct Player {
     Player() = default;
 
@@ -85,15 +81,16 @@ struct Player {
 		ImageData& player_sprite = sprites["player0"];
 		c.set_box(player_sprite.size.x, player_sprite.size.y);
 
-		map = create_map();
+		common_data.map_objects = create_map();
 	}
 
-	void place_clone(float screen_x, float screen_y, glm::uvec2 const &window_size);
-	void shoot (float screen_x, float screen_y, glm::uvec2 const &window_size); 
+	void place_clone(float world_x, float world_y);
+	void shoot (float world_x, float world_y); 
 	bool recv_message(Connection *connection);
 	void send_message(Connection *connection);
 	void move_player(float dx, float dy);
 
+	CommonData common_data;
 
 	// Place clones phase info
 	float place_time_elapsed = 0.f;
@@ -113,8 +110,6 @@ struct Player {
 	// Game information (synchronize with server?)
 	GameState state;
 
-	std::shared_ptr<Map> map;
-
 	// Character information
     // in radians from positive x (like a unit circle)
     // used to know where the player mouse is pointing right now
@@ -128,26 +123,17 @@ struct Player {
 	uint32_t ups = 0;
 	uint32_t downs = 0;
 
-	ImageRenderer renderer;
     // Map map;
     ///TODO:
     // 2nd element is whatever we need for drawing sprites @SHERWIN
     // load_png gave us a std::vector< glm::u8vec4 > so using that for now
     std::unordered_map<std::string, ImageData> sprites;
-	///TODO: should be updated with server because both players need to know 
-	// where all bullets are
-	std::vector<std::shared_ptr<Bullet>> bullets;	
-	std::vector<std::shared_ptr<Clone>> clones;	
-	std::vector<std::shared_ptr<Clone>> enemy_clones;	
-	
 
 
 
 	private:
-		std::shared_ptr<Map> create_map();
+		std::vector<MapObject> create_map();
 		const ImageData& get_player_sprite();
-		void world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y);
-		void screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y);
 
 		void update_place_clones(float elapsed);
 		void update_find_clones(float elapsed);
