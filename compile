@@ -1,0 +1,5 @@
+#!/bin/bash
+rm -rf ./objs
+rm ./dist/server
+node Maekfile.js
+./dist/server 1234

@@ -166,8 +166,8 @@ const common_names = [
 	maek.CPP('Load.cpp'),
 	maek.CPP('Connection.cpp'),
 	maek.CPP('hex_dump.cpp'),
-	maek.CPP('ImageRenderer.cpp')
-
+	maek.CPP('ImageRenderer.cpp'),
+	maek.CPP('Entity.cpp'),
 ];
 
 const show_meshes_names = [

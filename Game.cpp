@@ -47,37 +47,6 @@ void Player::screen_to_world(float screen_x, float screen_y, glm::uvec2 const &s
 	world_y = c.y - (screen_y - center_y);
 }
 
-bool Entity::collide(Entity& other) {
-	return !((other.box.hi_x < box.lo_x) || (box.hi_x < other.box.lo_x) || 
-			 (other.box.hi_y < box.lo_y) || (box.hi_y < other.box.lo_y)); 
-}
-
-void Entity::set_box(uint w, uint h) {
-	set_box(static_cast<float>(w), static_cast<float>(h));
-}
-
-void Entity::set_box(float w, float h) {
-	float halfw = w / 2.f;
-	float halfh = h / 2.f;
-	box.lo_x = x - halfw; 
-	box.hi_x = x + halfw;
-	box.lo_y = y - halfh;
-	box.hi_y = y + halfh;
-}
-
-void Entity::move(float dx, float dy) {
-	x += dx;	
-	y += dy;
-	box.update_box(dx, dy);
-}
-
-void BoundingBox::update_box(float dx, float dy) {
-	lo_x += dx;	
-	hi_x += dx;
-	lo_y += dy;
-	hi_y += dy;
-}
-
 void Player::move_player(float dx, float dy) {
 	c.move(dx, dy);
 	for (auto mapobj : map->map_objects)
@@ -139,16 +108,6 @@ void Player::draw(glm::uvec2 const &screen_size) {
 		world_to_opengl(lower_x, lower_y ,screen_size, screen_x, screen_y);	
 		renderer.render_image(*(mapobj->sprite), screen_x, screen_y);
 	}
-}
-
-void Entity::get_lower_left(float& lower_left_x, float& lower_left_y) {
-	lower_left_x = box.lo_x;	
-	lower_left_y = box.lo_y;
-}
-
-void Bullet::move_bullet(float elapsed) {
-	this->move(elapsed * velo.x, elapsed * velo.y);	
-	lifetime += elapsed;
 }
 
 void Player::shoot (float screen_x, float screen_y, glm::uvec2 const &window_size) {
@@ -306,13 +265,15 @@ void Player::update(float elapsed) {
 	switch(state) {
 		case PlaceClones:
 			update_place_clones(elapsed);
-			return;
+			break;
 		case FindClones:
 			update_find_clones(elapsed);
-			return;
+			break;
 		case KillClones:	
 			update_kill_clones(elapsed);
-			return;
+			break;
+		default:
+			break;
 	}
 }
 

@@ -67,6 +67,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 					printf("Switched to game over state\n");
 					player.state = GameOver;
 					return true;
+				default:
+					return false;
 			}
 		}
 		return false;
