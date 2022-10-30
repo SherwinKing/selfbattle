@@ -12,76 +12,72 @@
 #include <array>
 
 PlayMode::PlayMode(Client &client_) : client(client_) {
-	// player.init();
-	game.common_data = common_data;
-	player.common_data = common_data;
+
 }
 
 PlayMode::~PlayMode() {
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-	if (player.state == GameStarting || player.state == GamePaused || player.state == GameOver) {
-		return false;	
+	if (game.state == GameStarting || game.state == GamePaused || game.state == GameOver) {
+		//TODO: clear data and set some flag
+		return false;
 	}
-	// float screen_x = static_cast<float>(evt.button.x);
-	// float screen_y = static_cast<float>(evt.button.y);
-	// if (evt.type == SDL_MOUSEBUTTONUP) {
-	// 	switch (common_data.state) {
-	// 		case PlaceClones: 
-	// 			if (common_data.clones.size() >= NUM_CLONES) {
-	// 				return false;	
-	// 			}
-	// 			player.place_clone(screen_x, screen_y, window_size);	
-	// 			return true;
-	// 		case KillClones:
-	// 			player.shoot(screen_x, screen_y, window_size);
-	// 			return true;
-	// 		default:
-	// 			return false;	
-	// 	}	
-	// }
-	// if (evt.type == SDL_KEYDOWN) {
-	// 	if (evt.key.keysym.sym == SDLK_a) {
-	// 		player.move_player(-1.0 * PLAYER_SPEED, 0.0);	
-	// 		return true;
-	// 	} else if (evt.key.keysym.sym == SDLK_d) {
-	// 		player.move_player(1.0 * PLAYER_SPEED, 0.0);	
-	// 		return true;
-	// 	} else if (evt.key.keysym.sym == SDLK_w) {
-	// 		player.move_player(0.0, 1.0 * PLAYER_SPEED);	
-	// 		return true;
-	// 	} else if (evt.key.keysym.sym == SDLK_s) {
-	// 		player.move_player(0.0, -1.0 * PLAYER_SPEED);	
-	// 		return true;
-	// 	} 
-	// 	if (evt.key.keysym.sym == SDLK_SPACE) {
-	// 		switch(player.state) {
-	// 			case PlaceClones:
-	// 				printf("Switched to find clones state\n");
-	// 				player.state = FindClones;
-	// 				return true;
-	// 			case FindClones:
-	// 				printf("Switched to kill clones state\n");
-	// 				player.state = KillClones;
-	// 				return true;
-	// 			case KillClones:	
-	// 				printf("Switched to game over state\n");
-	// 				player.state = GameOver;
-	// 				return true;
-	// 			default:
-	// 				return false;
-	// 		}
-	// 	}
-	// 	return false;
-	// }
+	float screen_x = static_cast<float>(evt.button.x);
+	float screen_y = static_cast<float>(evt.button.y);
+	if (evt.type == SDL_MOUSEBUTTONUP) {
+		player.mouse.downs += 1;
+		player.mouse.pressed = true;
+		// save position of mouse on the player
+		screen_to_world(screen_x, screen_y, window_size, player.mouse_x, player.mouse_y);
+		return true;
+	}
+	if (evt.type == SDL_KEYDOWN) {
+		if (evt.key.keysym.sym == SDLK_a) {
+			player.left.downs += 1;
+			player.left.pressed = true;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_d) {
+			player.right.downs += 1;
+			player.right.pressed = true;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_w) {
+			player.up.downs += 1;
+			player.up.pressed = true;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_s) {
+			player.down.downs += 1;
+			player.down.pressed = true;
+			return true;
+		}
+	} 
+	else if (evt.type == SDL_KEYUP) {
+		if (evt.key.keysym.sym == SDLK_a) {
+			player.left.downs = 0;
+			player.left.pressed = false;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_d) {
+			player.right.downs = 0;
+			player.right.pressed = false;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_w) {
+			player.up.downs = 0;
+			player.up.pressed = false;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_s) {
+			player.down.downs = 0;
+			player.down.pressed = false;
+			return true;
+		}
+	}
 	return false;
 }
 
 void PlayMode::update(float elapsed) {
-	player.update(elapsed);
-	c = player.c;
-	/*
+
+	//queue data for sending to server:
+	player.send_message(&client.connection);
+
 	//send/receive data:
 	client.poll([this](Connection *c, Connection::Event event){
 		if (event == Connection::OnOpen) {
@@ -104,7 +100,8 @@ void PlayMode::update(float elapsed) {
 			}
 		}
 	}, 0.0);
-	*/
+
+	character = game.characters[player.player_id];
 }
 
 void PlayMode::world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y) {
@@ -112,8 +109,8 @@ void PlayMode::world_to_opengl(float world_x, float world_y, glm::uvec2 const &s
 	float h = static_cast<float>(screen_size.y);
 
 	// Between -1 and 1	
-	screen_x = ((world_x - player.c.x) / w) * 2.f;	
-	screen_y = ((world_y - player.c.y) / h) * 2.f;
+	screen_x = ((world_x - character.x) / w) * 2.f;	
+	screen_y = ((world_y - character.y) / h) * 2.f;
 }
 
 void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y) {
@@ -122,8 +119,8 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 
 	float center_x = w / 2.f;
 	float center_y = h / 2.f;
-	world_x = player.c.x + (screen_x - center_x); 
-	world_y = player.c.y - (screen_y - center_y);
+	world_x = character.x + (screen_x - center_x); 
+	world_y = character.y - (screen_y - center_y);
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -137,25 +134,27 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	float lower_x;
 	float lower_y;
 
-	const ImageData *character_sprite = c.get_sprite();	
+	const ImageData *character_sprite = character.get_sprite();	
 
-	c.get_lower_left(lower_x, lower_y);
+	CommonData *common_data = CommonData::get_instance();
+
+	character.get_lower_left(lower_x, lower_y);
 	world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);	
 	renderer.render_image(*character_sprite, screen_x, screen_y);
 
-	for (auto bullet : common_data.bullets) {
+	for (auto bullet : common_data->bullets) {
 		bullet.get_lower_left(lower_x, lower_y);	
 		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
 		renderer.render_image(*(bullet.sprite), screen_x, screen_y);
 	}
 
-	for (auto clone : common_data.clones) {
+	for (auto clone : common_data->clones) {
 		clone.get_lower_left(lower_x, lower_y);	
 		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
 		renderer.render_image(*(clone.sprite), screen_x, screen_y);
 	}
 
-	for (auto mapobj : common_data.map_objects) {
+	for (auto mapobj : common_data->map_objects) {
 		mapobj.get_lower_left(lower_x, lower_y);	
 		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
 		renderer.render_image(*(mapobj.sprite), screen_x, screen_y);

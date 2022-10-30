@@ -46,54 +46,30 @@ enum GameState  {
 	GameOver
 };
 
+//used to represent a control input:
+struct Button {
+	uint8_t downs = 0; //times the button has been pressed
+	bool pressed = false; //is the button pressed now
+};
+
 struct Player {
     Player() = default;
 
-	void place_clone(float world_x, float world_y);
-	void shoot (float world_x, float world_y); 
+	void send_message(Connection *connection) const;
+	//returns 'false' if no message or not a controls message,
+	//returns 'true' if read a controls message,
+	//throws on malformed controls message
 	bool recv_message(Connection *connection);
-	void send_message(Connection *connection);
-	void move_player(float dx, float dy);
-
-	CommonData common_data;
-
-	// Place clones phase info
-	float place_time_elapsed = 0.f;
-
-	// Find clones phase info
-	float find_time_elapsed = 0.f;
-
-	// Kill clones phase info
-	float kill_time_elapsed = 0.f;
-
 	
 	void update(float elapsed);
 
 	void set_position(float new_x, float new_y);
-	void draw(glm::uvec2 const &drawable_size);
-
-	// Game information (synchronize with server?)
-	GameState state;
-
-	// Character information
-    // in radians from positive x (like a unit circle)
-    // used to know where the player mouse is pointing right now
-	Character c;
     
-	bool is_client;
+	int player_id;
 
-	// Pressed inputs
-	uint32_t lefts = 0;
-	uint32_t rights	= 0;
-	uint32_t ups = 0;
-	uint32_t downs = 0;
-
-
-	private:
-
-		void update_place_clones(float elapsed);
-		void update_find_clones(float elapsed);
-		void update_kill_clones(float elapsed);
+	Button left, right, up, down, mouse;
+	float mouse_x;
+	float mouse_y;
 };
 
 
@@ -102,11 +78,15 @@ struct Player {
 
 struct Game {
 	std::list< Player > players; //(using list so they can have stable addresses)
+	std::vector<Character> characters; // character_id is player_id
+
 	Player *spawn_player(); //add player the end of the players list (may also, e.g., play some spawn anim)
 	void remove_player(Player *); //remove player from game (may also, e.g., play some despawn anim)
 
 	std::mt19937 mt; //used for spawning players
-	uint32_t next_player_number = 1; //used for naming players
+	uint32_t next_player_number = 0; //used for naming players
+
+	GameState state;
 
 	Game();
 
@@ -117,17 +97,22 @@ struct Game {
 	//the update rate on the server:
 	inline static constexpr float Tick = 1.0f / 30.0f;
 
-	//arena size:
-	inline static constexpr glm::vec2 ArenaMin = glm::vec2(-0.75f, -1.0f);
-	inline static constexpr glm::vec2 ArenaMax = glm::vec2( 0.75f,  1.0f);
+	// Place clones phase info
+	float place_time_elapsed = 0.f;
 
-	//player constants:
-	inline static constexpr float PlayerRadius = 0.06f;
-	inline static constexpr float PlayerSpeed = 2.0f;
-	inline static constexpr float PlayerAccelHalflife = 0.25f;
+	// Find clones phase info
+	float find_time_elapsed = 0.f;
+
+	// Kill clones phase info
+	float kill_time_elapsed = 0.f;
 	
 	std::vector<MapObject> create_map();
-	CommonData common_data;
+	void place_clone(float world_x, float world_y, int player_id);
+	void shoot (float world_x, float world_y, int player_id); 
+
+	void update_place_clones(float elapsed);
+	void update_find_clones(float elapsed);
+	void update_kill_clones(float elapsed);
 
 	//---- communication helpers ----
 

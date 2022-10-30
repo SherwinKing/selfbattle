@@ -40,6 +40,29 @@ ImageData *Entity::get_sprite(){
 	return this->sprite;
 }
 
+void Character::move_character(float dx, float dy) {
+	// do nothing if we're running to an obstacle
+	CommonData *common_data = CommonData::get_instance();
+	for (auto mapobj : common_data->map_objects)
+	{
+		if (collide(mapobj)) {
+			return;
+		}
+	}
+	for (auto clone : common_data->clones) {
+		if (collide(clone)) {
+			return;
+		}
+	}	
+	for (auto clone : common_data->enemy_clones) {
+		if (collide(clone)) {
+			return;
+		}
+	}
+
+	move(dx, dy);
+}
+
 bool Character::take_damage(float damage) {
 	hp -= damage;
 	return hp < 0.f;

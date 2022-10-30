@@ -39,10 +39,31 @@ struct Bullet;
 struct Clone;
 struct ImageData;
 
+// It is a singleton for now, might be changed in the future
+// https://refactoring.guru/design-patterns/singleton/cpp/example
 struct CommonData {
     std::vector<MapObject> map_objects;
     std::vector<Bullet> bullets;
 	std::vector<Clone> clones;
 	std::vector<Clone> enemy_clones;
     std::vector<ImageData> sprites;
+
+    CommonData() {
+
+    }
+
+    static CommonData *get_instance() {
+        static CommonData *_instance = nullptr;
+        if(_instance == nullptr){
+            _instance = new CommonData();
+        }
+        return _instance;
+    }
+
+    // Delete clone operator from singleton
+    CommonData(CommonData &other) = delete;
+    // Delete assigne operator from singleton
+    void operator=(const CommonData &) = delete;
+    // Delete move operator from singleton
+    CommonData(CommonData&&) = delete;
 };

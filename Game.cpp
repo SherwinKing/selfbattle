@@ -19,12 +19,13 @@ Game::Game() : mt(0x15466666) {
 			std::pair(bullet, "sprites/bullet.png")	
 		};
 		
+		CommonData *common_data = CommonData::get_instance();
 		for (size_t i = 0; i < NUM_SPRITES; ++i) {
             const auto& p = sprite_paths[i];
             ImageData s;
             load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin);
 			s.sprite_index = i;
-            common_data.sprites.emplace_back(s);
+            common_data->sprites.emplace_back(s);
 	    }
 		// TODO: implement this
 		// state = PlaceClones;
@@ -32,38 +33,70 @@ Game::Game() : mt(0x15466666) {
 		// ImageData& player_sprite = sprites["player0"];
 		// c.set_box(player_sprite.size.x, player_sprite.size.y);
 
-		common_data.map_objects = create_map();
+		common_data->map_objects = create_map();
 }
 
-void Player::set_position(float new_x, float new_y) {
-	c.x = new_x;
-	c.y = new_y;
+void Player::send_message(Connection *connection_) const {
+	assert(connection_);
+	auto &connection = *connection_;
+
+	uint32_t size = 5;
+	connection.send(Message::C2S_Controls);
+	connection.send(uint8_t(size));
+	connection.send(uint8_t(size >> 8));
+	connection.send(uint8_t(size >> 16));
+
+	auto send_button = [&](Button const &b) {
+		if (b.downs & 0x80) {
+			std::cerr << "Wow, you are really good at pressing buttons!" << std::endl;
+		}
+		connection.send(uint8_t( (b.pressed ? 0x80 : 0x00) | (b.downs & 0x7f) ) );
+	};
+
+	send_button(left);
+	send_button(right);
+	send_button(up);
+	send_button(down);
+	send_button(mouse);
 }
 
-bool Player::recv_message(Connection *connection){
+bool Player::recv_message(Connection *connection_) {
+	assert(connection_);
+	auto &connection = *connection_;
+
+	auto &recv_buffer = connection.recv_buffer;
+
+	//expecting [type, size_low0, size_mid8, size_high8]:
+	if (recv_buffer.size() < 4) return false;
+	if (recv_buffer[0] != uint8_t(Message::C2S_Controls)) return false;
+	uint32_t size = (uint32_t(recv_buffer[3]) << 16)
+	              | (uint32_t(recv_buffer[2]) << 8)
+	              |  uint32_t(recv_buffer[1]);
+	if (size != 5) throw std::runtime_error("Controls message with size " + std::to_string(size) + " != 5!");
+	
+	//expecting complete message:
+	if (recv_buffer.size() < 4 + size) return false;
+
+	auto recv_button = [](uint8_t byte, Button *button) {
+		button->pressed = (byte & 0x80);
+		uint32_t d = uint32_t(button->downs) + uint32_t(byte & 0x7f);
+		if (d > 255) {
+			std::cerr << "got a whole lot of downs" << std::endl;
+			d = 255;
+		}
+		button->downs = uint8_t(d);
+	};
+
+	recv_button(recv_buffer[4+0], &left);
+	recv_button(recv_buffer[4+1], &right);
+	recv_button(recv_buffer[4+2], &up);
+	recv_button(recv_buffer[4+3], &down);
+	recv_button(recv_buffer[4+4], &mouse);
+
+	//delete message from buffer:
+	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
+
 	return true;
-}
-
-void Player::move_player(float dx, float dy) {
-	// do nothing if we're running to an obstacle
-	for (auto mapobj : common_data.map_objects)
-	{
-		if (c.collide(mapobj)) {
-			return;
-		}
-	}
-	for (auto clone : common_data.clones) {
-		if (c.collide(clone)) {
-			return;
-		}
-	}	
-	for (auto clone : common_data.enemy_clones) {
-		if (c.collide(clone)) {
-			return;
-		}
-	}
-
-	c.move(dx, dy);
 }
 
 Player *Game::spawn_player() {
@@ -74,25 +107,29 @@ Player *Game::spawn_player() {
 }
 
 
-void Player::shoot (float world_x, float world_y) {	
+void Game::shoot (float world_x, float world_y, int player_id) {
+	CommonData *common_data = CommonData::get_instance();
+	Character c = characters[player_id];
+
 	glm::vec2 shoot_velo;
 	shoot_velo.x = world_x - c.x;
 	shoot_velo.y = world_y - c.y;
 	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
 
-	ImageData *bullet_sprite = &(common_data.sprites[bullet]);
-	Bullet bullet = Bullet(c.x, c.y, bullet_sprite, shoot_velo); 
-	common_data.bullets.emplace_back(bullet);	
+	ImageData *bullet_sprite = &(common_data->sprites[bullet]);
+	Bullet bullet = Bullet(c.x, c.y, bullet_sprite, shoot_velo, player_id); 
+	common_data->bullets.emplace_back(bullet);	
 	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
 
 	bullet.move_bullet(amount_to_move);
 } 
 
-void Player::place_clone(float world_x, float world_y) {
-	ImageData *clone_sprite = &(common_data.sprites[clone]);
-	Clone clone = Clone(world_x, world_y, clone_sprite); 
+void Game::place_clone(float world_x, float world_y, int player_id) {
+	CommonData *common_data = CommonData::get_instance();
+	ImageData *clone_sprite = &(common_data->sprites[clone]);
+	Clone clone = Clone(world_x, world_y, clone_sprite, player_id); 
 	
-	common_data.clones.emplace_back(clone);	
+	common_data->clones.emplace_back(clone);	
 }
 
 void Game::remove_player(Player *player) {
@@ -101,6 +138,7 @@ void Game::remove_player(Player *player) {
 		if (&*pi == player) {
 			players.erase(pi);
 			found = true;
+			// TODO: add mechanism for reconnecting players
 			break;
 		}
 	}
@@ -108,8 +146,9 @@ void Game::remove_player(Player *player) {
 }
 
 std::vector<MapObject> Game::create_map() {
+	CommonData *common_data = CommonData::get_instance();
 	std::vector<MapObject> objs;
-	ImageData *wall_sprite = &(common_data.sprites[wall]);
+	ImageData *wall_sprite = &(common_data->sprites[wall]);
 	std::array<std::pair<float, float>, 3> wall_positions = {
 		std::pair(100.f, 340.f),
 		std::pair(250.f, 200.f),
@@ -121,7 +160,7 @@ std::vector<MapObject> Game::create_map() {
 	return objs;
 }
 
-void Player::update_place_clones(float elapsed) {
+void Game::update_place_clones(float elapsed) {
 	place_time_elapsed += elapsed;	
 	if (place_time_elapsed > PLACE_CLONE_PHASE_DURATION) {
 		state = FindClones;
@@ -129,7 +168,7 @@ void Player::update_place_clones(float elapsed) {
 	}
 }
 
-void Player::update_find_clones(float elapsed) {
+void Game::update_find_clones(float elapsed) {
 	find_time_elapsed += elapsed;		
 	if (find_time_elapsed > FIND_CLONE_PHASE_DURATION) {
 		state = KillClones;
@@ -137,7 +176,7 @@ void Player::update_find_clones(float elapsed) {
 	}
 }
 
-void Player::update_kill_clones(float elapsed) {
+void Game::update_kill_clones(float elapsed) {
 	
 }
 // void Player::update_kill_clones(float elapsed) {
@@ -211,25 +250,36 @@ void Player::update_kill_clones(float elapsed) {
 // 	enemy_clones = new_enemy_clones;
 // }
 
-void Player::update(float elapsed) {
-	switch(state) {
-		case PlaceClones:
-			update_place_clones(elapsed);
-			break;
-		case FindClones:
-			update_find_clones(elapsed);
-			break;
-		case KillClones:	
-			update_kill_clones(elapsed);
-			break;
-		default:
-			break;
-	}
-}
-
 void Game::update(float elapsed) {
 	//position/velocity update:
+	// switch(state) {
+	// 	case PlaceClones:
+	// 		update_place_clones(elapsed);
+	// 		break;
+	// 	case FindClones:
+	// 		update_find_clones(elapsed);
+	// 		break;
+	// 	case KillClones:	
+	// 		update_kill_clones(elapsed);
+	// 		break;
+	// 	default:
+	// 		break;
+	// }
 
+	// switch (common_data.state) {
+	// 	case PlaceClones: 
+	// 		if (common_data.clones.size() >= NUM_CLONES) {
+	// 			return false;	
+	// 		}
+	// 		player.place_clone(screen_x, screen_y, window_size);	
+	// 		return true;
+	// 	case KillClones:
+	// 		player.shoot(screen_x, screen_y, window_size);
+	// 		return true;
+	// 	default:
+	// 		return false;	
+	// }
+	// player.move_player(-1.0 * PLAYER_SPEED, 0.0);
 }
 
 
