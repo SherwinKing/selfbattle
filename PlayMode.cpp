@@ -139,33 +139,31 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		return;
 	}
 
-	float screen_x;
-	float screen_y;
-	float lower_x;
-	float lower_y;
 
-	const ImageData character_sprite = common_data->sprites[character.sprite_index];	
+	auto draw_entity = [&] (Entity &entity) {
+		float lower_x;
+		float lower_y;
+		entity.get_lower_left(lower_x, lower_y);
+		float screen_x;
+		float screen_y;
+		world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);
+		renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y);
+	};
 
-	character.get_lower_left(lower_x, lower_y);
-	world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);
-	renderer.render_image(character_sprite, screen_x, screen_y);
-
-	for (auto bullet : common_data->bullets) {
-		bullet.get_lower_left(lower_x, lower_y);
-		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);
-		renderer.render_image(common_data->sprites[bullet.sprite_index], screen_x, screen_y);
+	for (Character c : common_data->characters) {
+		draw_entity(c);
 	}
 
-	for (auto clone : common_data->clones) {
-		clone.get_lower_left(lower_x, lower_y);
-		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);
-		renderer.render_image(common_data->sprites[clone.sprite_index], screen_x, screen_y);
+	for (Bullet bullet : common_data->bullets) {
+		draw_entity(bullet);
 	}
 
-	for (auto map_obj : common_data->map_objects) {
-		map_obj.get_lower_left(lower_x, lower_y);	
-		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);
-		renderer.render_image(common_data->sprites[map_obj.sprite_index], screen_x, screen_y);
+	for (Clone clone : common_data->clones) {
+		draw_entity(clone);
+	}
+
+	for (MapObject map_obj : common_data->map_objects) {
+		draw_entity(map_obj);
 	}
 
 	GL_ERRORS();

@@ -95,7 +95,7 @@ void Game::remove_player(Player *player) {
 
 std::vector<MapObject> Game::create_map() {
 	std::vector<MapObject> objs;
-	std::array<std::pair<float, float>, 4> wall_positions = {
+	std::vector<std::pair<float, float>> wall_positions = {
 		std::pair(100.f, 340.f),
 		std::pair(250.f, 200.f),
 		std::pair(-100.f, -100.f),
@@ -226,9 +226,11 @@ void Game::update(float elapsed) {
 		if (player.right.pressed) dir.x += 1.0f;
 		if (player.down.pressed) dir.y -= 1.0f;
 		if (player.up.pressed) dir.y += 1.0f;
-		dir = glm::normalize(dir);
 
-		common_data->characters[player.player_id].move_character(dir.x * PLAYER_SPEED, dir.y * PLAYER_SPEED);
+		if (dir.x != 0 || dir.y != 0) {
+			dir = glm::normalize(dir);
+			common_data->characters[player.player_id].move_character(dir.x * PLAYER_SPEED, dir.y * PLAYER_SPEED);
+		}
 	}
 
 	switch(state) {
@@ -441,7 +443,6 @@ void Game::send_state_message(Connection *connection_, Player *connection_player
 	connection.send_buffer[mark-3] = uint8_t(size);
 	connection.send_buffer[mark-2] = uint8_t(size >> 8);
 	connection.send_buffer[mark-1] = uint8_t(size >> 16);
-	std::cout << "sending " << std::to_string(size) << " bytes\n";
 }
 
 bool Game::recv_state_message(Connection *connection_) {
@@ -512,7 +513,6 @@ bool Game::recv_state_message(Connection *connection_) {
 		read(&character.hp);
 	}
 }
-	std::cout << "receiving " << std::to_string(size) << " bytes\n";
 	if (at != size) throw std::runtime_error("Trailing data in state message.");
 
 	//delete message from buffer:
