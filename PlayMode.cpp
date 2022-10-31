@@ -25,7 +25,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	float screen_x = static_cast<float>(evt.button.x);
 	float screen_y = static_cast<float>(evt.button.y);
 	if (evt.type == SDL_MOUSEBUTTONUP) {
-		player.mouse.downs += 1;
+		// TODO: record number of mouse_downs
+		// player.mouse.downs += 1;
 		player.mouse.pressed = true;
 		// save position of mouse on the player
 		screen_to_world(screen_x, screen_y, window_size, player.mouse_x, player.mouse_y);
@@ -33,19 +34,19 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	}
 	if (evt.type == SDL_KEYDOWN) {
 		if (evt.key.keysym.sym == SDLK_a) {
-			player.left.downs += 1;
+			// player.left.downs += 1;
 			player.left.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
-			player.right.downs += 1;
+			// player.right.downs += 1;
 			player.right.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_w) {
-			player.up.downs += 1;
+			// player.up.downs += 1;
 			player.up.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
-			player.down.downs += 1;
+			// player.down.downs += 1;
 			player.down.pressed = true;
 			return true;
 		}
@@ -112,8 +113,8 @@ void PlayMode::update(float elapsed) {
 		}
 	}, 0.0);
 
-	assert(player.player_id <= common_data->characters.size() - 1);
-	character = common_data->characters[player.player_id];
+	// assert(player.player_id <= common_data->characters.size() - 1);
+	// character = common_data->characters[player.player_id];
 }
 
 void PlayMode::world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y) {
@@ -140,35 +141,39 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
+
+	std::cout << std::to_string(common_data->bullets.size()) << " bullets\n";
+	std::cout << std::to_string(common_data->clones.size()) << " clones\n";
+	std::cout << std::to_string(common_data->characters.size()) << " characters\n";
 	
-	float screen_x;
-	float screen_y;
-	float lower_x;
-	float lower_y;
+	// float screen_x;
+	// float screen_y;
+	// float lower_x;
+	// float lower_y;
 
-	const ImageData character_sprite = common_data->sprites[character.sprite_index];	
+	// const ImageData character_sprite = common_data->sprites[character.sprite_index];	
 
-	character.get_lower_left(lower_x, lower_y);
-	world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);	
-	renderer.render_image(character_sprite, screen_x, screen_y);
+	// character.get_lower_left(lower_x, lower_y);
+	// world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);	
+	// renderer.render_image(character_sprite, screen_x, screen_y);
 
-	for (auto bullet : common_data->bullets) {
-		bullet.get_lower_left(lower_x, lower_y);	
-		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
-		renderer.render_image(common_data->sprites[bullet.sprite_index], screen_x, screen_y);
-	}
+	// for (auto bullet : common_data->bullets) {
+	// 	bullet.get_lower_left(lower_x, lower_y);	
+	// 	world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
+	// 	renderer.render_image(common_data->sprites[bullet.sprite_index], screen_x, screen_y);
+	// }
 
-	for (auto clone : common_data->clones) {
-		clone.get_lower_left(lower_x, lower_y);	
-		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
-		renderer.render_image(common_data->sprites[clone.sprite_index], screen_x, screen_y);
-	}
+	// for (auto clone : common_data->clones) {
+	// 	clone.get_lower_left(lower_x, lower_y);	
+	// 	world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
+	// 	renderer.render_image(common_data->sprites[clone.sprite_index], screen_x, screen_y);
+	// }
 
-	for (auto map_obj : common_data->map_objects) {
-		map_obj.get_lower_left(lower_x, lower_y);	
-		world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
-		renderer.render_image(common_data->sprites[map_obj.sprite_index], screen_x, screen_y);
-	}
+	// for (auto map_obj : common_data->map_objects) {
+	// 	map_obj.get_lower_left(lower_x, lower_y);	
+	// 	world_to_opengl(lower_x, lower_y ,drawable_size, screen_x, screen_y);	
+	// 	renderer.render_image(common_data->sprites[map_obj.sprite_index], screen_x, screen_y);
+	// }
 
 	GL_ERRORS();
 }

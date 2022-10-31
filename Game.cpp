@@ -31,6 +31,20 @@ Game::Game() : mt(0x15466666) {
 	    }
 
 		common_data->map_objects = create_map();
+
+		common_data->clones.emplace_back();
+		common_data->clones.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
+		common_data->bullets.emplace_back();
 }
 
 void Game::send_setup_message(Connection *connection_, Player *connection_player) const {
@@ -150,7 +164,6 @@ bool Player::recv_player_message(Connection *connection_) {
 	};
 
 	player_id = recv_buffer[4+0];
-
 	recv_button(recv_buffer[4+1], &left);
 	recv_button(recv_buffer[4+2], &right);
 	recv_button(recv_buffer[4+3], &up);
@@ -413,11 +426,14 @@ void Game::send_state_message(Connection *connection_, Player *connection_player
 		connection.send(character.hp);
 	};
 	int character_size = common_data->characters.size();
+	assert(character_size > 0);
 	connection.send(character_size);
 	for (int i = 0; i < character_size; i++) {
 		send_character(common_data->characters[i]);
 	}
 }
+	uint8_t a = 123;
+	connection.send(a);
 
 	//compute the message size and patch into the message header:
 	uint32_t size = uint32_t(connection.send_buffer.size() - mark);
@@ -450,7 +466,6 @@ bool Game::recv_state_message(Connection *connection_) {
 	};
 
 	read(&state);
-
 {
 	common_data->bullets.clear();
 	int bullet_count;
@@ -483,6 +498,9 @@ bool Game::recv_state_message(Connection *connection_) {
 	common_data->characters.clear();
 	int character_count;
 	read(&character_count);
+	assert(character_count > 0);
+	assert(character_count < 0);
+	std::cout << std::to_string(character_count) << "characters\n";
 	for (int i = 0; i < character_count; i++) {
 		common_data->characters.emplace_back();
 		Character &character = common_data->characters.back();
