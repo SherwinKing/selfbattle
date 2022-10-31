@@ -14,10 +14,10 @@
 
 Game::Game() : mt(0x15466666) {
 		std::array<std::pair<uint32_t, const char *>, NUM_SPRITES> sprite_paths = {
-			std::pair(PLAYER_SPRITE, "sprites/test.png"),
-			std::pair(CLONE_SPRITE, "sprites/clone.png"),
-			std::pair(WALL_SPRITE, "sprites/wall.png"),
-			std::pair(BULLET_SPRITE, "sprites/bullet.png")	
+			std::pair(SPRITE::PLAYER_SPRITE, "sprites/test.png"),
+			std::pair(SPRITE::CLONE_SPRITE, "sprites/clone.png"),
+			std::pair(SPRITE::WALL_SPRITE, "sprites/wall.png"),
+			std::pair(SPRITE::BULLET_SPRITE, "sprites/bullet.png")	
 		};
 		
 		common_data = CommonData::get_instance();
@@ -48,11 +48,11 @@ Player *Game::spawn_player() {
 Character *Game::spawn_character(Player *new_player) {
 	Character new_character;
 	if (new_player->player_id == 0) {
-		new_character = Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, PLAYER_SPRITE, 0);
+		new_character = Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE, 0);
 	}
 	else {
 		assert(new_player->player_id == 1);
-		new_character = Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, PLAYER_SPRITE, 1);
+		new_character = Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE, 1);
 	}
 	common_data->characters.emplace_back(new_character);
 
@@ -68,13 +68,13 @@ void Player::shoot() {
 	shoot_velo.y = mouse_y - c.y;
 	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
 
-	common_data->bullets.emplace_back(Bullet(c.x, c.y, BULLET_SPRITE, shoot_velo, player_id));	
+	common_data->bullets.emplace_back(Bullet(c.x, c.y, SPRITE::BULLET_SPRITE, shoot_velo, player_id));	
 	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
 	common_data->bullets.back().move_bullet(amount_to_move);
 } 
 
 void Player::place_clone() {
-	Clone clone = Clone(mouse_x, mouse_y, CLONE_SPRITE, player_id); 
+	Clone clone = Clone(mouse_x, mouse_y, SPRITE::CLONE_SPRITE, player_id); 
 	CommonData::get_instance()->clones.emplace_back(clone);	
 }
 
@@ -99,7 +99,7 @@ std::vector<MapObject> Game::create_map() {
 		std::pair(-100.f, -100.f),
 	};
 	for (auto p : wall_positions) {
-		objs.emplace_back(MapObject(p.first, p.second, WALL_SPRITE));	
+		objs.emplace_back(MapObject(p.first, p.second, SPRITE::WALL_SPRITE));	
 	}
 	return objs;
 }
@@ -116,10 +116,25 @@ void Game::update_place_clones(float elapsed) {
 		return;
 	}
 
-	// TODO: this only works if max_clone = 1. Modify player input so it works for more clones
+	// TODO: I'm putting a temporary fix here so we won't be spawning too many clones together
+	// Ideally we want clone placement to be signalled by key release
 	for (Player &player : players) {
-		if (player.mouse.pressed && common_data->clones.size() < NUM_CLONES) {
-			player.place_clone();	
+		int clone_num = 0;
+		for (Clone clone : common_data->clones) {
+			if (clone.player_id == player.player_id) {
+				clone_num++;
+			}
+		}
+		if (player.mouse.pressed && clone_num < NUM_CLONES) {
+			bool overlap = false;
+			for (Clone &clone : common_data->clones) {
+				if (sqrt((player.mouse_x-clone.x)*(player.mouse_x-clone.x)+(player.mouse_y-clone.y)*(player.mouse_y-clone.y) < 50)) {
+					overlap = true;
+				}
+			}
+			if (!overlap) {
+				player.place_clone();
+			}
 		}
 	}
 }

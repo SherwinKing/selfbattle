@@ -5,14 +5,9 @@ void Entity::move(float dx, float dy) {
 	y += dy;
 }
 
-void Entity::get_lower_left(float& lower_left_x, float& lower_left_y) {
-	lower_left_x = x - box.width / 2;	
-	lower_left_y = y - box.height / 2;
-}
-
 bool Entity::collide(Entity& other) {
 	// TODO: implement this
-	return false;
+	return sqrt((x-other.x)*(x-other.x)+(y-other.y)*(y-other.y) < 50);
 	// float halfw = w / 2.f;
 	// float halfh = h / 2.f;
 	// box.lo_x = x - halfw; 

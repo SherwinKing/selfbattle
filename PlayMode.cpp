@@ -25,12 +25,16 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	}
 	float screen_x = (float)evt.button.x;
 	float screen_y = (float)evt.button.y;
-	if (evt.type == SDL_MOUSEBUTTONUP) {
+	if (evt.type == SDL_MOUSEBUTTONDOWN) {
 		// TODO: record number of mouse_downs
 		// player.mouse.downs += 1;
 		player.mouse.pressed = true;
 		// save position of mouse on the player
 		screen_to_world(screen_x, screen_y, window_size, player.mouse_x, player.mouse_y);
+		return true;
+	}
+	if (evt.type == SDL_MOUSEBUTTONUP) {
+		player.mouse.pressed = false;
 		return true;
 	}
 	if (evt.type == SDL_KEYDOWN) {
@@ -126,8 +130,8 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 	float center_y = h / 2.f;
 	world_x = character.x + (screen_x - center_x); 
 	world_y = character.y - (screen_y - center_y);
-	std::cout << "input: " << std::to_string(screen_x) << ", " << std::to_string(screen_y) << "\n";
-	std::cout << "output: " << std::to_string(world_x) << ", " << std::to_string(world_y) << "\n";
+	// std::cout << "input: " << std::to_string(screen_x) << ", " << std::to_string(screen_y) << "\n";
+	// std::cout << "output: " << std::to_string(world_x) << ", " << std::to_string(world_y) << "\n";
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -146,12 +150,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	text_renderer.resize(drawable_size.x, drawable_size.y);
 
 	auto draw_entity = [&] (Entity &entity) {
-		float lower_x;
-		float lower_y;
-		entity.get_lower_left(lower_x, lower_y);
 		float screen_x;
 		float screen_y;
-		world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);
+		world_to_opengl(entity.x, entity.y, drawable_size, screen_x, screen_y);
 		img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y);
 	};
 

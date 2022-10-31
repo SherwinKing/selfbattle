@@ -24,7 +24,7 @@ constexpr float FIND_CLONE_PHASE_DURATION = 10.f;
 constexpr float KILL_CLONE_PHASE_DURATION = 30.f;
 
 
-constexpr uint32_t NUM_CLONES = 1;
+constexpr uint32_t NUM_CLONES = 2;
 
 
 constexpr uint32_t NUM_SPRITES = 4;

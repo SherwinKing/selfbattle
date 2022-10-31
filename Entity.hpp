@@ -5,18 +5,15 @@
 
 enum TAG {
 	MAP_TAG = 0,
-	CLONE0_TAG = 1,
-	PLAYER0_TAG = 2,
-	BULLET0_TAG = 3,
-	CLONE1_TAG = 4,
-	PLAYER1_TAG = 5,
-	BULLET1_TAG = 6,
+	CLONE_TAG = 1,
+	PLAYER_TAG = 2,
+	BULLET_TAG = 3,
 };
 
 struct BoundingBox {
     BoundingBox() = default;
-    float width = 50;
-	float height = 50;
+    float width = 0;
+	float height = 0;
 };
 
 struct Entity {
@@ -24,10 +21,10 @@ struct Entity {
 	float x;
 	float y;
 	uint8_t sprite_index;
+	uint8_t player_id = -1;
 	TAG tag;
 
 	void move(float dx, float dy);
-	void get_lower_left(float& lower_left_x, float& lower_left_y);
 	// ImageData get_sprite();
 	bool collide(Entity& other);
 };
@@ -38,7 +35,7 @@ struct MapObject : Entity {
 		x = start_x;
 		y = start_y;
 		this->sprite_index = sprite_index;
-		tag = MAP_TAG;
+		tag = TAG::MAP_TAG;
 	}
 };
 
@@ -51,12 +48,7 @@ struct Character : Entity {
 	Character(float start_x, float start_y, uint8_t sprite_index, int player_id) {
 		x = start_x; 
 		y = start_y;
-		if (player_id == 0) {
-			tag = PLAYER0_TAG;
-		}
-		else {
-			tag = PLAYER1_TAG;
-		}
+		tag = TAG::PLAYER_TAG;
 		this->player_id = player_id;
 		this->sprite_index = sprite_index;
 	}
@@ -72,12 +64,8 @@ struct Clone : Entity {
 	Clone(float start_x, float start_y, uint8_t sprite_index, int player_id) {
 		x = start_x;
 		y = start_y;
-		if (player_id == 0) {
-			tag = CLONE0_TAG;
-		}
-		else {
-			tag = CLONE1_TAG;
-		}
+		tag = TAG::CLONE_TAG;
+		this->player_id = player_id;
 		this->sprite_index = sprite_index;
 	}
 
@@ -95,12 +83,8 @@ struct Bullet : Entity {
 		velo = bullet_velo;
 		x = start_x;
 		y = start_y;
-		if (shooter_id == 0) {
-			tag = BULLET0_TAG;
-		}
-		else {
-			tag = BULLET1_TAG;
-		}
+		tag = TAG::BULLET_TAG;
+		this->player_id = player_id;
 		this->sprite_index = sprite_index;
 	}	
 
