@@ -28,6 +28,8 @@ struct PlayMode : Mode {
 	Player player;
 	Character character;
 
+	CommonData *common_data;
+
 	//latest game state (from server):
 	Game game;
 

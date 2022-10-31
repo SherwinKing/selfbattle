@@ -72,7 +72,12 @@ int main(int argc, char **argv) {
 					//client connected:
 
 					//create some player info for them:
-					connection_to_player.emplace(c, game.spawn_player());
+					Player *new_player = game.spawn_player();
+					connection_to_player.emplace(c, new_player);
+
+					game.spawn_character(new_player);
+
+					game.send_setup_message(c, new_player);
 
 				} else if (evt == Connection::OnClose) {
 					//client disconnected:
@@ -93,7 +98,7 @@ int main(int argc, char **argv) {
 						bool handled_message;
 						do {
 							handled_message = false;
-							if (player.recv_message(c)) handled_message = true;
+							if (player.recv_player_message(c)) handled_message = true;
 							//TODO: extend for more message types as needed
 						} while (handled_message);
 					} catch (std::exception const &e) {

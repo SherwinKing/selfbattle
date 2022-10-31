@@ -32,9 +32,9 @@ struct Connection;
 //Currently set up for a "client sends controls" / "server sends whole state" situation.
 
 enum class Message : uint8_t {
-	C2S_Controls = 1, //Greg!
-	S2C_State = 's',
-	//...
+	C2S_Player = 1,
+	S2C_State = 2,
+	S2C_Setup = 3,
 };
 
 enum GameState  {
@@ -55,17 +55,17 @@ struct Button {
 struct Player {
     Player() = default;
 
-	void send_message(Connection *connection) const;
-	//returns 'false' if no message or not a controls message,
-	//returns 'true' if read a controls message,
-	//throws on malformed controls message
-	bool recv_message(Connection *connection);
+	void send_player_message(Connection *connection) const;
+	//returns 'false' if no message or not a player message,
+	//returns 'true' if read a player message,
+	//throws on malformed player message
+	bool recv_player_message(Connection *connection);
 	
 	void update(float elapsed);
 
 	void set_position(float new_x, float new_y);
     
-	int player_id;
+	uint8_t player_id = 0;
 
 	Button left, right, up, down, mouse;
 	float mouse_x;
@@ -78,15 +78,18 @@ struct Player {
 
 struct Game {
 	std::list< Player > players; //(using list so they can have stable addresses)
-	std::vector<Character> characters; // character_id is player_id
 
 	Player *spawn_player(); //add player the end of the players list (may also, e.g., play some spawn anim)
 	void remove_player(Player *); //remove player from game (may also, e.g., play some despawn anim)
 
+	Character *spawn_character(Player *new_player);
+
 	std::mt19937 mt; //used for spawning players
 	uint32_t next_player_number = 0; //used for naming players
 
-	GameState state;
+	CommonData *common_data;
+
+	GameState state = PlaceClones;
 
 	Game();
 
@@ -125,4 +128,9 @@ struct Game {
 	//send game state.
 	//  Will move "connection_player" to the front of the front of the sent list.
 	void send_state_message(Connection *connection, Player *connection_player = nullptr) const;
+
+	// used by server
+	void send_setup_message(Connection *connection_, Player *connection_player) const;
+	// used by client
+	bool recv_setup_message(Connection *connection_, Player *client_player);
 };
