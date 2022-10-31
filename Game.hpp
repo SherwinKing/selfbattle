@@ -98,6 +98,7 @@ struct Game {
 	CommonData *common_data;
 
 	GameState state = PlaceClones;
+	bool single_player = false;
 
 	Game();
 

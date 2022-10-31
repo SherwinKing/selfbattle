@@ -13,6 +13,7 @@
 
 PlayMode::PlayMode(Client &client_) : client(client_) {
 	common_data = CommonData::get_instance();
+	text_renderer = TextRenderer("font/Roboto/Roboto-Regular.ttf");
 }
 
 PlayMode::~PlayMode() {
@@ -22,8 +23,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	if (game.state == GameStarting || game.state == GamePaused || game.state == GameOver) {
 		return false;	
 	}
-	float screen_x = static_cast<float>(evt.button.x);
-	float screen_y = static_cast<float>(evt.button.y);
+	float screen_x = (float)evt.button.x;
+	float screen_y = (float)evt.button.y;
 	if (evt.type == SDL_MOUSEBUTTONUP) {
 		// TODO: record number of mouse_downs
 		// player.mouse.downs += 1;
@@ -125,6 +126,8 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 	float center_y = h / 2.f;
 	world_x = character.x + (screen_x - center_x); 
 	world_y = character.y - (screen_y - center_y);
+	std::cout << "input: " << std::to_string(screen_x) << ", " << std::to_string(screen_y) << "\n";
+	std::cout << "output: " << std::to_string(world_x) << ", " << std::to_string(world_y) << "\n";
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -139,6 +142,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		return;
 	}
 
+	img_renderer.resize(drawable_size.x, drawable_size.y);
+	text_renderer.resize(drawable_size.x, drawable_size.y);
 
 	auto draw_entity = [&] (Entity &entity) {
 		float lower_x;
@@ -147,7 +152,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		float screen_x;
 		float screen_y;
 		world_to_opengl(lower_x, lower_y, drawable_size, screen_x, screen_y);
-		renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y);
+		img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y);
 	};
 
 	for (Character c : common_data->characters) {
@@ -165,6 +170,36 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	for (MapObject map_obj : common_data->map_objects) {
 		draw_entity(map_obj);
 	}
+
+	std::string game_state_text;
+		switch(game.state) {
+		case PlaceClones:
+			game_state_text = "Phase 1: Place clones";
+			break;
+		case FindClones:
+			game_state_text = "Phase 2: Search";
+			break;
+		case KillClones:	
+			game_state_text = "Phase 3: Kill clones";
+			break;
+		default:
+			game_state_text = "Unimplemented";
+			break;
+	}
+
+	text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+
+	// formatting time manually because I wasn't able to find a library function
+	std::string time_text = std::to_string(game.time_remaining);
+	int period_index = 0;
+	for (int i = 0; i < time_text.size(); i++) {
+		if (time_text[i] == '.') {
+			period_index = i;
+			break;
+		}
+	}
+	time_text = time_text.substr(0, period_index + 3);
+	text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 	GL_ERRORS();
 }

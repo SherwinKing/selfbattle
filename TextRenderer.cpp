@@ -59,11 +59,14 @@ TextRenderer::TextRenderer(uint32_t window_width, uint32_t window_height, std::s
 	// }
 }
 
+TextRenderer::TextRenderer(std::string font_file_path_from_dist)
+ : TextRenderer(1920, 1080, font_file_path_from_dist){}
+
 TextRenderer::TextRenderer(uint32_t window_width, uint32_t window_height)
- : TextRenderer(window_width, window_height, "font/Wellfleet/Wellfleet-Regular.ttf"){}
+ : TextRenderer(window_width, window_height, "font/Roboto/Roboto-Regular.ttf"){}
 
 TextRenderer::TextRenderer()
- : TextRenderer(1920, 1080, "font/Wellfleet/Wellfleet-Regular.ttf"){}
+ : TextRenderer(1920, 1080, "font/Roboto/Roboto-Regular.ttf"){}
 
 /**
  * Render text using the currently loaded font and currently set font size.

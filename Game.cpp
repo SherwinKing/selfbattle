@@ -59,7 +59,7 @@ Character *Game::spawn_character(Player *new_player) {
 	return &common_data->characters.back();
 }
 
-void Player::shoot () {
+void Player::shoot() {
 	CommonData *common_data = CommonData::get_instance();
 	Character c = common_data->characters[player_id];
 
@@ -68,11 +68,9 @@ void Player::shoot () {
 	shoot_velo.y = mouse_y - c.y;
 	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
 
-	Bullet bullet = Bullet(c.x, c.y, BULLET_SPRITE, shoot_velo, player_id); 
-	common_data->bullets.emplace_back(bullet);	
+	common_data->bullets.emplace_back(Bullet(c.x, c.y, BULLET_SPRITE, shoot_velo, player_id));	
 	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
-
-	bullet.move_bullet(amount_to_move);
+	common_data->bullets.back().move_bullet(amount_to_move);
 } 
 
 void Player::place_clone() {
@@ -119,7 +117,7 @@ void Game::update_place_clones(float elapsed) {
 	}
 
 	// TODO: this only works if max_clone = 1. Modify player input so it works for more clones
-	for (Player player : players) {
+	for (Player &player : players) {
 		if (player.mouse.pressed && common_data->clones.size() < NUM_CLONES) {
 			player.place_clone();	
 		}
@@ -128,6 +126,7 @@ void Game::update_place_clones(float elapsed) {
 
 void Game::setup_find_clones() {
 	state = FindClones;
+	time_remaining = FIND_CLONE_PHASE_DURATION;
 	common_data->characters[0].x = PLAYER1_STARTING_X;
 	common_data->characters[0].y = PLAYER1_STARTING_Y;
 	common_data->characters[1].x = PLAYER0_STARTING_X;
@@ -135,7 +134,7 @@ void Game::setup_find_clones() {
 }
 
 void Game::update_find_clones(float elapsed) {
-	time_remaining -= elapsed;		
+	time_remaining -= elapsed;
 	if (time_remaining < 0) {
 		setup_kill_clones();
 		return;
@@ -166,21 +165,21 @@ void Game::update_kill_clones(float elapsed) {
 	// }
 
 	// Move everything
-	for (Bullet bullet : common_data->bullets) {
+	for (Bullet &bullet : common_data->bullets) {
 		bullet.move_bullet(elapsed);
-		for (Clone clone : common_data->clones) {
+		for (Clone &clone : common_data->clones) {
 			if (bullet.collide(clone)) {
 				clone.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
 			}
 		}
-		for (Character character : common_data->characters) {
+		for (Character &character : common_data->characters) {
 			if (bullet.collide(character)) {
 				character.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
 			}
 		}
-		for (MapObject map_obj : common_data->map_objects) {
+		for (MapObject &map_obj : common_data->map_objects) {
 			if (bullet.collide(map_obj)) {
 				bullet.active = false;
 			}
@@ -205,9 +204,9 @@ void Game::update_kill_clones(float elapsed) {
 		common_data->clones.end()
 	);
 
-	for (Player player : players) {
+	for (Player &player : players) {
 		player.shoot_interval -= elapsed;
-		if (player.mouse.pressed && player.shoot_interval > 0) {
+		if (player.mouse.pressed && player.shoot_interval < 0) {
 			player.shoot();
 			player.shoot_interval = BULLET_INTERVAL;
 		}
@@ -216,11 +215,11 @@ void Game::update_kill_clones(float elapsed) {
 
 void Game::update(float elapsed) {
 	// wait if players haven't arrived yet
-	if (player_cnt < 2) {
+	if (player_cnt < 2 && !single_player) {
 		return;
 	}
 
-	for (Player player : players) {
+	for (Player &player : players) {
 		glm::vec2 dir = glm::vec2(0.0f, 0.0f);
 		if (player.left.pressed) dir.x -= 1.0f;
 		if (player.right.pressed) dir.x += 1.0f;
@@ -325,6 +324,7 @@ void Player::send_player_message(Connection *connection_) const {
 
 	connection.send(mouse_x);
 	connection.send(mouse_y);
+	
 }
 
 bool Player::recv_player_message(Connection *connection_) {
@@ -353,14 +353,13 @@ bool Player::recv_player_message(Connection *connection_) {
 		button->downs = uint8_t(d);
 	};
 
-	auto recv_float = [&recv_buffer](int offset, float *f) {
-		// TODO: check for endienness and receive accordingly
-		char temp[4];
-		temp[0] = recv_buffer[offset+0];
-		temp[1] = recv_buffer[offset+1];
-		temp[2] = recv_buffer[offset+2];
-		temp[3] = recv_buffer[offset+3];
-		*f = *(reinterpret_cast<float *>(temp));
+	int at = 6;
+	auto read = [&](auto *val) {
+		if (at + sizeof(*val) > size) {
+			throw std::runtime_error("Ran out of bytes reading state message.");
+		}
+		std::memcpy(val, &recv_buffer[4 + at], sizeof(*val));
+		at += sizeof(*val);
 	};
 
 	player_id = recv_buffer[4+0];
@@ -370,8 +369,8 @@ bool Player::recv_player_message(Connection *connection_) {
 	recv_button(recv_buffer[4+4], &down);
 	recv_button(recv_buffer[4+5], &mouse);
 
-	recv_float(recv_buffer[4+6], &mouse_x);
-	recv_float(recv_buffer[4+10], &mouse_y);
+	read(&mouse_x);
+	read(&mouse_y);
 
 	//delete message from buffer:
 	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);

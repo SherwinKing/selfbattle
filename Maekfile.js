@@ -167,6 +167,7 @@ const common_names = [
 	maek.CPP('Connection.cpp'),
 	maek.CPP('hex_dump.cpp'),
 	maek.CPP('ImageRenderer.cpp'),
+	maek.CPP('TextRenderer.cpp'),
 	maek.CPP('Entity.cpp'),
 ];
 

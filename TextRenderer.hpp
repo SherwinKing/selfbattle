@@ -56,6 +56,7 @@ private:
 public:
 	TextRenderer();
 	TextRenderer(uint32_t window_width, uint32_t window_height);
+	TextRenderer(std::string font_file_path_from_dist);
 	TextRenderer(uint32_t window_width, uint32_t window_height, std::string font_file_path_from_dist);
 
 	inline void resize(uint32_t window_width, uint32_t window_height) {

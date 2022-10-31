@@ -5,6 +5,7 @@
 #include "Connection.hpp"
 #include "Game.hpp"
 #include "ImageRenderer.hpp"
+#include "TextRenderer.hpp"
 
 #include <glm/glm.hpp>
 
@@ -24,7 +25,8 @@ struct PlayMode : Mode {
 	void screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y);
 
 	//----- game state -----
-	ImageRenderer renderer;
+	ImageRenderer img_renderer;
+	TextRenderer text_renderer;
 	Player player;
 	Character character;
 
