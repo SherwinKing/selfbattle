@@ -87,7 +87,6 @@ int main(int argc, char **argv) {
 				} else { assert(evt == Connection::OnRecv);
 					//got data from client:
 					//std::cout << "current buffer:\n" << hex_dump(c->recv_buffer); std::cout.flush(); //DEBUG
-
 					//look up in players list:
 					auto f = connection_to_player.find(c);
 					assert(f != connection_to_player.end());
@@ -112,12 +111,10 @@ int main(int argc, char **argv) {
 
 		//update current game state
 		game.update(Game::Tick);
-
 		//send updated game state to all clients
 		for (auto &[c, player] : connection_to_player) {
 			game.send_state_message(c, player);
 		}
-
 	}
 
 

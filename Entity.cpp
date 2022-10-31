@@ -6,8 +6,8 @@ void Entity::move(float dx, float dy) {
 }
 
 void Entity::get_lower_left(float& lower_left_x, float& lower_left_y) {
-	lower_left_x = box.lo_x;	
-	lower_left_y = box.lo_y;
+	lower_left_x = x - box.width / 2;	
+	lower_left_y = y - box.height / 2;
 }
 
 bool Entity::collide(Entity& other) {

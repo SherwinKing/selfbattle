@@ -32,12 +32,12 @@ struct Connection;
 //Currently set up for a "client sends controls" / "server sends whole state" situation.
 
 enum class Message : uint8_t {
-	C2S_Player = 1,
-	S2C_State = 2,
-	S2C_Setup = 3,
+	C2S_Player = '1',
+	S2C_State = '2',
+	S2C_Setup = '3',
 };
 
-enum GameState  {
+enum GameState {
 	GamePaused, // A count down or something
 	GameStarting,
 	PlaceClones,
@@ -45,6 +45,13 @@ enum GameState  {
 	KillClones,
 	GameOver
 };
+
+// enum ButtonState {
+// 	DOWN,
+// 	PRESSED,
+// 	UP,
+// 	NONE
+// }
 
 //used to represent a control input:
 struct Button {
@@ -55,21 +62,22 @@ struct Button {
 struct Player {
     Player() = default;
 
+	int8_t player_id = -1;
+	Button left, right, up, down, mouse;
+	float mouse_x;
+	float mouse_y;
+	float shoot_interval = 0;
+
+	void update(float elapsed);
+	void set_position(float new_x, float new_y);
+	void place_clone();
+	void shoot (); 
+
 	void send_player_message(Connection *connection) const;
 	//returns 'false' if no message or not a player message,
 	//returns 'true' if read a player message,
 	//throws on malformed player message
 	bool recv_player_message(Connection *connection);
-	
-	void update(float elapsed);
-
-	void set_position(float new_x, float new_y);
-    
-	uint8_t player_id = 0;
-
-	Button left, right, up, down, mouse;
-	float mouse_x;
-	float mouse_y;
 };
 
 
@@ -85,7 +93,7 @@ struct Game {
 	Character *spawn_character(Player *new_player);
 
 	std::mt19937 mt; //used for spawning players
-	uint32_t next_player_number = 0; //used for naming players
+	uint32_t player_cnt = 0; //used for naming players
 
 	CommonData *common_data;
 
@@ -100,22 +108,17 @@ struct Game {
 	//the update rate on the server:
 	inline static constexpr float Tick = 1.0f / 30.0f;
 
-	// Place clones phase info
-	float place_time_elapsed = 0.f;
-
-	// Find clones phase info
-	float find_time_elapsed = 0.f;
-
-	// Kill clones phase info
-	float kill_time_elapsed = 0.f;
+	float time_remaining = PLACE_CLONE_PHASE_DURATION;
 	
 	std::vector<MapObject> create_map();
-	void place_clone(float world_x, float world_y, int player_id);
-	void shoot (float world_x, float world_y, int player_id); 
 
 	void update_place_clones(float elapsed);
 	void update_find_clones(float elapsed);
 	void update_kill_clones(float elapsed);
+
+	void setup_place_clones();
+	void setup_find_clones();
+	void setup_kill_clones();
 
 	//---- communication helpers ----
 
@@ -133,4 +136,7 @@ struct Game {
 	void send_setup_message(Connection *connection_, Player *connection_player) const;
 	// used by client
 	bool recv_setup_message(Connection *connection_, Player *client_player);
+
+	// calls different helper functions based on their connection enums
+	bool client_recv_message(Connection *connection_, Player *client_player);
 };

@@ -15,16 +15,8 @@ enum TAG {
 
 struct BoundingBox {
     BoundingBox() = default;
-    BoundingBox(float low_x, float low_y, float high_x, float high_y) {
-        lo_x = low_x;
-        lo_y = low_y;
-        hi_x = high_x;
-        hi_y = high_y;
-    } 
-    float lo_x;
-    float lo_y;
-    float hi_x;
-    float hi_y;
+    float width = 50;
+	float height = 50;
 };
 
 struct Entity {
@@ -96,6 +88,8 @@ struct Clone : Entity {
 struct Bullet : Entity {
 	float lifetime = 0.f;
 	glm::vec2 velo;
+	bool active = true;
+
 	Bullet() = default;
 	Bullet(float start_x, float start_y, uint8_t sprite_index, glm::vec2& bullet_velo, int shooter_id) {
 		velo = bullet_velo;

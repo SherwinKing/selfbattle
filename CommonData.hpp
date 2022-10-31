@@ -13,6 +13,7 @@ constexpr float PLAYER_SPEED = 10.f;
 constexpr float BULLET_SPEED = 80.f;
 constexpr float BULLET_DAMAGE = 10.f;
 constexpr float BULLET_LIFETIME = 10.f;
+constexpr float BULLET_INTERVAL = 0.8f;
 // Radius/width. Currently images are 100x100 so enough far away so it won't hit
 // player when you click
 constexpr float PLAYER_SIZE = 71.f;
@@ -23,7 +24,7 @@ constexpr float FIND_CLONE_PHASE_DURATION = 15.f;
 constexpr float KILL_CLONE_PHASE_DURATION = 30.f;
 
 
-constexpr uint32_t NUM_CLONES = 2;
+constexpr uint32_t NUM_CLONES = 1;
 
 
 constexpr uint32_t NUM_SPRITES = 4;
