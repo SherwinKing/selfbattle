@@ -7,7 +7,7 @@ void Entity::move(float dx, float dy) {
 
 bool Entity::collide(Entity& other) {
 	// TODO: implement this
-	return sqrt((x-other.x)*(x-other.x)+(y-other.y)*(y-other.y) < 50);
+	return sqrt((x-other.x)*(x-other.x)+(y-other.y)*(y-other.y)) < 150;
 	// float halfw = w / 2.f;
 	// float halfh = h / 2.f;
 	// box.lo_x = x - halfw; 
@@ -19,21 +19,23 @@ bool Entity::collide(Entity& other) {
 }
 
 void Character::move_character(float dx, float dy) {
-	// do nothing if we're running to an obstacle
+	
+	move(dx, dy);
+
 	CommonData *common_data = CommonData::get_instance();
 	for (auto mapobj : common_data->map_objects)
 	{
 		if (collide(mapobj)) {
+			move(-dx, -dy);
 			return;
 		}
 	}
 	for (auto clone : common_data->clones) {
 		if (collide(clone)) {
+			move(-dx, -dy);
 			return;
 		}
 	}
-
-	move(dx, dy);
 }
 
 bool Character::take_damage(float damage) {
