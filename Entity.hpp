@@ -18,6 +18,8 @@ struct BoundingBox {
 
 struct Entity {
 	BoundingBox box;
+	bool is_invisible = false;
+	bool is_removed = false;
 	float x;
 	float y;
 	uint8_t sprite_index;
@@ -27,6 +29,8 @@ struct Entity {
 	void move(float dx, float dy);
 	// ImageData get_sprite();
 	bool collide(Entity& other);
+
+	void remove();
 };
 
 struct MapObject : Entity {

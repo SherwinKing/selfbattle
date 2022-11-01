@@ -150,6 +150,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	text_renderer.resize(drawable_size.x, drawable_size.y);
 
 	auto draw_entity = [&] (Entity &entity) {
+		if (entity.is_invisible) return;
 		float screen_x;
 		float screen_y;
 		world_to_opengl(entity.x, entity.y, drawable_size, screen_x, screen_y);
