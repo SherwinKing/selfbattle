@@ -95,8 +95,37 @@ std::vector<MapObject> Game::create_map() {
 	std::vector<MapObject> objs;
 	std::vector<std::pair<float, float>> wall_positions = {
 		std::pair(100.f, 340.f),
-		std::pair(250.f, 200.f),
-		std::pair(-100.f, -100.f),
+		std::pair(100.f, 440.f),
+		std::pair(100.f, 540.f),
+		std::pair(100.f, 640.f),
+		std::pair(50.f, 640.f),
+		std::pair(150.f, 640.f),
+		std::pair(200.f, 640.f),
+
+		std::pair(-1000.f, 340.f),
+		std::pair(-1000.f, 440.f),
+		std::pair(-1000.f, 540.f),
+		std::pair(-1000.f, 640.f),
+		std::pair(-500.f, 640.f),
+		std::pair(-1500.f, 640.f),
+		std::pair(-2000.f, 640.f),
+
+		std::pair(1000.f,- 340.f),
+		std::pair(1000.f,- 440.f),
+		std::pair(1000.f,- 540.f),
+		std::pair(1000.f,- 640.f),
+		std::pair(500.f, -640.f),
+		std::pair(1500.f,- 640.f),
+		std::pair(2000.f,- 640.f),
+
+		std::pair(300.f,- 340.f),
+		std::pair(300.f,- 440.f),
+		std::pair(300.f,- 540.f),
+		std::pair(300.f,- 640.f),
+		std::pair(350.f, -640.f),
+		std::pair(450.f,- 640.f),
+		std::pair(500.f,- 640.f),
+
 	};
 	for (auto p : wall_positions) {
 		objs.emplace_back(MapObject(p.first, p.second, SPRITE::WALL_SPRITE));	
