@@ -3,11 +3,11 @@
 #include <stdint.h>
 #include <vector>
 
-constexpr float CLONE_STARTING_HEALTH = 50.f;
-constexpr float PLAYER_STARTING_HEALTH = 100.f;
-constexpr float PLAYER0_STARTING_X = 0.f;
+constexpr float CLONE_STARTING_HEALTH = 20.f;
+constexpr float PLAYER_STARTING_HEALTH = 1000.f;
+constexpr float PLAYER0_STARTING_X = -100.f;
 constexpr float PLAYER0_STARTING_Y = -300.f;
-constexpr float PLAYER1_STARTING_X = 0.f;
+constexpr float PLAYER1_STARTING_X = -100.f;
 constexpr float PLAYER1_STARTING_Y = 300.f;
 constexpr float PLAYER_SPEED = 10.f;
 constexpr float BULLET_SPEED = 80.f;
