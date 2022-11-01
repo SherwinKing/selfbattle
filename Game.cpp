@@ -184,8 +184,12 @@ void Game::update_kill_clones(float elapsed) {
 		bullet.move_bullet(elapsed);
 		for (Clone &clone : common_data->clones) {
 			if (bullet.collide(clone)) {
-				clone.take_damage(BULLET_DAMAGE);
+				bool if_clone_died = clone.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
+
+				if (if_clone_died) {
+					clone.remove();
+				}
 			}
 		}
 		for (Character &character : common_data->characters) {
