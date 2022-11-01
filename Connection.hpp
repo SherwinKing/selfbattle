@@ -99,7 +99,7 @@ struct Connection {
 };
 
 struct Server {
-	Server(std::string const &port, std::string const &host = ""); //pass the port number to listen on, as a string (servname, really)
+	Server(std::string const &host, std::string const &port); //pass the port number to listen on, as a string (servname, really)
 
 	//poll() updates the list of active connections and sends/receives data if possible:
 	// (will wait up to 'timeout' for first event)

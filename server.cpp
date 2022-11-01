@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 
 	//------------ initialization ------------
 
-	Server server(port, host);
+	Server server(host, port);
 
 	//------------ main loop ------------
 
