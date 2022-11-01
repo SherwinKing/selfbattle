@@ -202,5 +202,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	time_text = time_text.substr(0, period_index + 3);
 	text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
+	std::string hp_text = "HP: " + std::to_string(character.hp);
+	text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+
 	GL_ERRORS();
 }
