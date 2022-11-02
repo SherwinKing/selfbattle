@@ -28,7 +28,7 @@ constexpr uint32_t NUM_CLONES = 2;
 
 
 constexpr uint32_t NUM_SPRITES = 4;
-enum SPRITE {
+enum SPRITE : uint8_t {
     PLAYER_SPRITE = 0,
     CLONE_SPRITE = 1,
     WALL_SPRITE = 2,

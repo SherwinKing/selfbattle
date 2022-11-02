@@ -20,58 +20,72 @@ PlayMode::~PlayMode() {
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-	if (game.state == GameStarting || game.state == GamePaused || game.state == GameOver) {
-		return false;	
+	if (!player.ready) {
+		if (evt.type == SDL_KEYDOWN || evt.type == SDL_MOUSEBUTTONDOWN) {
+			player.ready = true;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_READY);
+			return true;
+		}
 	}
-	float screen_x = (float)evt.button.x;
-	float screen_y = (float)evt.button.y;
+
+	if (!game.ready) {
+		return false;
+	}
+
+	if (game.state == GameStarting || game.state == GamePaused || game.state == GameOver) {
+		return false;
+	}
+
+	// TODO: store info to message queue
 	if (evt.type == SDL_MOUSEBUTTONDOWN) {
-		// TODO: record number of mouse_downs
-		// player.mouse.downs += 1;
-		player.mouse.pressed = true;
+		player.mouse.state = Button::BTN_DOWN;
 		// save position of mouse on the player
+		float screen_x = (float)evt.button.x;
+		float screen_y = (float)evt.button.y;
 		screen_to_world(screen_x, screen_y, window_size, player.mouse_x, player.mouse_y);
+		game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 		return true;
 	}
 	if (evt.type == SDL_MOUSEBUTTONUP) {
-		player.mouse.pressed = false;
+		player.mouse.state = Button::BTN_RELEASE;
+		game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 		return true;
 	}
 	if (evt.type == SDL_KEYDOWN) {
 		if (evt.key.keysym.sym == SDLK_a) {
-			// player.left.downs += 1;
-			player.left.pressed = true;
+			player.left.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
-			// player.right.downs += 1;
-			player.right.pressed = true;
+			player.right.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_w) {
-			// player.up.downs += 1;
-			player.up.pressed = true;
+			player.up.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
-			// player.down.downs += 1;
-			player.down.pressed = true;
+			player.down.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		}
 	} 
 	else if (evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
-			player.left.downs = 0;
-			player.left.pressed = false;
+			player.left.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
-			player.right.downs = 0;
-			player.right.pressed = false;
+			player.right.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_w) {
-			player.up.downs = 0;
-			player.up.pressed = false;
+			player.up.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
-			player.down.downs = 0;
-			player.down.pressed = false;
+			player.down.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
 			return true;
 		}
 	}
@@ -80,9 +94,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
-
-	// queue data for sending to server:
-	player.send_player_message(&client.connection);
 
 	// send/receive data:
 	client.poll([this](Connection *c, Connection::Event event){
@@ -97,7 +108,7 @@ void PlayMode::update(float elapsed) {
 			try {
 				do {
 					handled_message = false;
-					if (game.client_recv_message(c, &player)) handled_message = true;
+					if (game.recv_message(c, &player, false)) handled_message = true;
 				} while (handled_message);
 			} catch (std::exception const &e) {
 				std::cerr << "[" << c->socket << "] malformed message from server: " << e.what() << std::endl;
@@ -107,10 +118,12 @@ void PlayMode::update(float elapsed) {
 		}
 	}, 0.0);
 
-	assert(player.player_id <= common_data->characters.size() - 1);
-	if (player.player_id >= 0) {
-		character = common_data->characters[player.player_id];
+	if (!game.ready) {
+		return;
 	}
+
+	character = common_data->characters[player.player_id];
+	game.update(elapsed);
 }
 
 void PlayMode::world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y) {
@@ -139,6 +152,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
+
+	img_renderer.resize(drawable_size.x, drawable_size.y);
+	text_renderer.resize(drawable_size.x, drawable_size.y);
 	
 	// player data not in the system yet
 	if (player.player_id == -1) {
@@ -146,8 +162,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		return;
 	}
 
-	img_renderer.resize(drawable_size.x, drawable_size.y);
-	text_renderer.resize(drawable_size.x, drawable_size.y);
+	if (!game.ready) {
+		text_renderer.render_text("Press any key to start", -0.5f, 0.0f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		return;
+	}
+
+	// for (int i = 0; i < game.players.size(); i++) {
+	// 	Player p = game.players[i];
+	// 	std::cout << "printing for player " << std::to_string(i) << ": ";
+	// 	std::cout << "left " << std::to_string((uint8_t)p.left.state) << " right " << std::to_string((uint8_t)p.right.state) << " up " << std::to_string((uint8_t)p.up.state) << " down " << std::to_string((uint8_t)p.down.state) << " mouse " << std::to_string((uint8_t)p.mouse.state) << "\n";
+	// }
 
 	auto draw_entity = [&] (Entity &entity) {
 		float screen_x;
@@ -173,7 +197,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	std::string game_state_text;
-		switch(game.state) {
+	switch(game.state) {
 		case PlaceClones:
 			game_state_text = "Phase 1: Place clones";
 			break;

@@ -19,6 +19,7 @@
 #include <memory>
 #include <cassert>
 #include <random>
+#include <deque>
 
 #include <iostream>
 #include <fstream>
@@ -29,15 +30,14 @@ struct Connection;
 
 //Game state, separate from rendering.
 
-//Currently set up for a "client sends controls" / "server sends whole state" situation.
-
-enum class Message : uint8_t {
-	C2S_Player = '1',
-	S2C_State = '2',
-	S2C_Setup = '3',
+enum class MESSAGE : uint8_t {
+	SERVER_INIT = '1',
+	PLAYER_INPUT = '2',
+	PLAYER_READY = '3',
+	SERVER_READY = '4',
 };
 
-enum GameState {
+enum GameState : uint8_t {
 	GamePaused, // A count down or something
 	GameStarting,
 	PlaceClones,
@@ -46,51 +46,59 @@ enum GameState {
 	GameOver
 };
 
-// enum ButtonState {
-// 	DOWN,
-// 	PRESSED,
-// 	UP,
-// 	NONE
-// }
-
 //used to represent a control input:
 struct Button {
-	uint8_t downs = 0; //times the button has been pressed
-	bool pressed = false; //is the button pressed now
+	enum State {
+		NONE,
+		BTN_DOWN,
+		BTN_IS_PRESSED,
+		BTN_RELEASE,
+	};
+
+	State state = State::NONE;
 };
 
 struct Player {
     Player() = default;
+	Player(int8_t player_id) {
+		this->player_id = player_id;
+	}
 
 	int8_t player_id = -1;
 	Button left, right, up, down, mouse;
 	float mouse_x;
 	float mouse_y;
 	float shoot_interval = 0;
+	bool ready = false;
 
 	void update(float elapsed);
 	void set_position(float new_x, float new_y);
 	void place_clone();
-	void shoot (); 
-
-	void send_player_message(Connection *connection) const;
-	//returns 'false' if no message or not a player message,
-	//returns 'true' if read a player message,
-	//throws on malformed player message
-	bool recv_player_message(Connection *connection);
+	void try_shooting (); 
 };
 
+struct MessageInfo {
 
+	MESSAGE tag;
+	// id of the message's owner
+	// server will broadcast a message to everyone except its owner
+	int8_t player_id;
+
+	MessageInfo();
+	MessageInfo(MESSAGE tag, int8_t id) {
+		this->tag = tag;
+		player_id = id;
+	}
+};
 
 //state of one player in the game:
 
 struct Game {
-	std::list< Player > players; //(using list so they can have stable addresses)
+	std::vector<Player> players;
+	std::deque<MessageInfo> message_queue;
 
 	Player *spawn_player(); //add player the end of the players list (may also, e.g., play some spawn anim)
 	void remove_player(Player *); //remove player from game (may also, e.g., play some despawn anim)
-
-	Character *spawn_character(Player *new_player);
 
 	std::mt19937 mt; //used for spawning players
 	uint32_t player_cnt = 0; //used for naming players
@@ -98,7 +106,7 @@ struct Game {
 	CommonData *common_data;
 
 	GameState state = PlaceClones;
-	bool single_player = false;
+	bool ready = false;
 
 	Game();
 
@@ -122,22 +130,6 @@ struct Game {
 	void setup_kill_clones();
 
 	//---- communication helpers ----
-
-	//used by client:
-	//set game state from data in connection buffer
-	// (return true if data was read)
-	bool recv_state_message(Connection *connection);
-
-	//used by server:
-	//send game state.
-	//  Will move "connection_player" to the front of the front of the sent list.
-	void send_state_message(Connection *connection, Player *connection_player = nullptr) const;
-
-	// used by server
-	void send_setup_message(Connection *connection_, Player *connection_player) const;
-	// used by client
-	bool recv_setup_message(Connection *connection_, Player *client_player);
-
-	// calls different helper functions based on their connection enums
-	bool client_recv_message(Connection *connection_, Player *client_player);
+	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;
+	bool recv_message(Connection *connection_, Player *client_player, bool is_server);
 };
