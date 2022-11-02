@@ -20,10 +20,10 @@ PlayMode::~PlayMode() {
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-	if (!player.ready) {
+	if (player == nullptr || !player->ready) {
 		if (evt.type == SDL_KEYDOWN || evt.type == SDL_MOUSEBUTTONDOWN) {
-			player.ready = true;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_READY);
+			player->ready = true;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_READY);
 			return true;
 		}
 	}
@@ -38,54 +38,54 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 	// TODO: store info to message queue
 	if (evt.type == SDL_MOUSEBUTTONDOWN) {
-		player.mouse.state = Button::BTN_DOWN;
+		player->mouse.state = Button::BTN_DOWN;
 		// save position of mouse on the player
 		float screen_x = (float)evt.button.x;
 		float screen_y = (float)evt.button.y;
-		screen_to_world(screen_x, screen_y, window_size, player.mouse_x, player.mouse_y);
-		game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+		screen_to_world(screen_x, screen_y, window_size, player->mouse_x, player->mouse_y);
+		game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 		return true;
 	}
 	if (evt.type == SDL_MOUSEBUTTONUP) {
-		player.mouse.state = Button::BTN_RELEASE;
-		game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+		player->mouse.state = Button::BTN_RELEASE;
+		game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 		return true;
 	}
 	if (evt.type == SDL_KEYDOWN) {
 		if (evt.key.keysym.sym == SDLK_a) {
-			player.left.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->left.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
-			player.right.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->right.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_w) {
-			player.up.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->up.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
-			player.down.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->down.state = Button::BTN_DOWN;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		}
 	} 
 	else if (evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
-			player.left.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->left.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
-			player.right.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->right.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_w) {
-			player.up.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->up.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
-			player.down.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, &player, MESSAGE::PLAYER_INPUT);
+			player->down.state = Button::BTN_RELEASE;
+			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 			return true;
 		}
 	}
@@ -94,6 +94,15 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
+	if (single_player) {
+		player = &game.players[0];
+		character = &common_data->characters[0];
+		player_id = 0;
+		player->ready = true;
+		game.ready = true;
+		game.update(elapsed);
+		return;
+	}
 
 	// send/receive data:
 	client.poll([this](Connection *c, Connection::Event event){
@@ -107,8 +116,22 @@ void PlayMode::update(float elapsed) {
 			bool handled_message;
 			try {
 				do {
-					handled_message = false;
-					if (game.recv_message(c, &player, false)) handled_message = true;
+					handled_message = true;
+					Player temp_player;
+					switch(game.recv_message(c, &temp_player, false)) {
+						case MESSAGE::SERVER_INIT:
+							player_id = temp_player.player_id;
+							player = &game.players[player_id];
+							character = &common_data->characters[player_id];
+							break;
+						case MESSAGE::PLAYER_INPUT:
+							// TODO: assign value for the other player
+						case MESSAGE::SERVER_READY:
+							break;
+						default:
+							handled_message = false;
+							break;
+					}
 				} while (handled_message);
 			} catch (std::exception const &e) {
 				std::cerr << "[" << c->socket << "] malformed message from server: " << e.what() << std::endl;
@@ -122,7 +145,6 @@ void PlayMode::update(float elapsed) {
 		return;
 	}
 
-	character = common_data->characters[player.player_id];
 	game.update(elapsed);
 }
 
@@ -131,8 +153,8 @@ void PlayMode::world_to_opengl(float world_x, float world_y, glm::uvec2 const &s
 	float h = static_cast<float>(screen_size.y);
 
 	// Between -1 and 1	
-	screen_x = ((world_x - character.x) / w) * 2.f;	
-	screen_y = ((world_y - character.y) / h) * 2.f;
+	screen_x = ((world_x - character->x) / w) * 2.f;	
+	screen_y = ((world_y - character->y) / h) * 2.f;
 }
 
 void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y) {
@@ -141,8 +163,8 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 
 	float center_x = w / 2.f;
 	float center_y = h / 2.f;
-	world_x = character.x + (screen_x - center_x); 
-	world_y = character.y - (screen_y - center_y);
+	world_x = character->x + (screen_x - center_x); 
+	world_y = character->y - (screen_y - center_y);
 	// std::cout << "input: " << std::to_string(screen_x) << ", " << std::to_string(screen_y) << "\n";
 	// std::cout << "output: " << std::to_string(world_x) << ", " << std::to_string(world_y) << "\n";
 }
@@ -157,7 +179,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	text_renderer.resize(drawable_size.x, drawable_size.y);
 	
 	// player data not in the system yet
-	if (player.player_id == -1) {
+	if (player_id == -1) {
 		// TODO: maybe consider rendering something here
 		return;
 	}
@@ -167,11 +189,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		return;
 	}
 
-	// for (int i = 0; i < game.players.size(); i++) {
-	// 	Player p = game.players[i];
-	// 	std::cout << "printing for player " << std::to_string(i) << ": ";
-	// 	std::cout << "left " << std::to_string((uint8_t)p.left.state) << " right " << std::to_string((uint8_t)p.right.state) << " up " << std::to_string((uint8_t)p.up.state) << " down " << std::to_string((uint8_t)p.down.state) << " mouse " << std::to_string((uint8_t)p.mouse.state) << "\n";
-	// }
 
 	auto draw_entity = [&] (Entity &entity) {
 		float screen_x;
@@ -226,7 +243,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	time_text = time_text.substr(0, period_index + 3);
 	text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
-	std::string hp_text = "HP: " + std::to_string(character.hp);
+	std::string hp_text = "HP: " + std::to_string(character->hp);
 	text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 	GL_ERRORS();

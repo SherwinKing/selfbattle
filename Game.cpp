@@ -33,6 +33,7 @@ Game::Game() : mt(0x15466666) {
 	}
 
 	common_data->map_objects = create_map();
+	common_data->characters.reserve(2);
 	common_data->characters.emplace_back( Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE, 0) );
 	common_data->characters.emplace_back( Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE, 1) );
 
@@ -237,19 +238,19 @@ void Game::update(float elapsed) {
 
 	for (Player &player : players) {
 		// TODO: register the buttons and store them with timestamps
-		if (player.left.BTN_DOWN) {
+		if (player.left.state == Button::BTN_DOWN) {
 			player.left.state = Button::BTN_IS_PRESSED;
 		}
-		if (player.right.BTN_DOWN) {
+		if (player.right.state == Button::BTN_DOWN) {
 			player.right.state = Button::BTN_IS_PRESSED;
 		}
-		if (player.up.BTN_DOWN) {
+		if (player.up.state == Button::BTN_DOWN) {
 			player.up.state = Button::BTN_IS_PRESSED;
 		}
-		if (player.down.BTN_DOWN) {
+		if (player.down.state == Button::BTN_DOWN) {
 			player.down.state = Button::BTN_IS_PRESSED;
 		}
-		if (player.mouse.BTN_DOWN) {
+		if (player.mouse.state == Button::BTN_DOWN) {
 			// TODO: refactor
 			player.mouse.state = Button::BTN_IS_PRESSED;
 			if (state == PlaceClones) {
@@ -266,10 +267,10 @@ void Game::update(float elapsed) {
 			}
 		}
 		glm::vec2 dir = glm::vec2(0.0f, 0.0f);
-		if (player.left.BTN_IS_PRESSED) dir.x -= 1.0f;
-		if (player.right.BTN_IS_PRESSED) dir.x += 1.0f;
-		if (player.down.BTN_IS_PRESSED) dir.y -= 1.0f;
-		if (player.up.BTN_IS_PRESSED) dir.y += 1.0f;
+		if (player.left.state == Button::BTN_IS_PRESSED) dir.x -= 1.0f;
+		if (player.right.state == Button::BTN_IS_PRESSED) dir.x += 1.0f;
+		if (player.down.state == Button::BTN_IS_PRESSED) dir.y -= 1.0f;
+		if (player.up.state == Button::BTN_IS_PRESSED) dir.y += 1.0f;
 
 		if (dir.x != 0 || dir.y != 0) {
 			dir = glm::normalize(dir);
@@ -340,6 +341,9 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 			std::cout << "send server ready\n";
 			// sending out the message type as signal
 			break;
+		default:
+			std::cout << "this should not happen\n";
+			break;
 	}
 
 
@@ -351,19 +355,19 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 	// std::cout << "[" << connection.socket << "] recv'd data. Current buffer:\n" << hex_dump(connection.send_buffer); std::cout.flush(); //DEBUG
 }
 
-bool Game::recv_message(Connection *connection_, Player *client_player, bool is_server) {
+MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool is_server) {
 	assert(connection_);
 	auto &connection = *connection_;
 	auto &recv_buffer = connection.recv_buffer;
 
 	//expecting [type, size_low0, size_mid8, size_high8]:
-	if (recv_buffer.size() < 4) return false;
+	if (recv_buffer.size() < 4) return MESSAGE::MSG_NONE;
 	uint32_t size = (uint32_t(recv_buffer[3]) << 16)
 	              | (uint32_t(recv_buffer[2]) << 8)
 	              |  uint32_t(recv_buffer[1]);
 	
 	//expecting complete message:
-	if (recv_buffer.size() < 4 + size) return false;
+	if (recv_buffer.size() < 4 + size) return MESSAGE::MSG_NONE;
 	
 
 	uint32_t at = 0;
@@ -428,12 +432,12 @@ bool Game::recv_message(Connection *connection_, Player *client_player, bool is_
 		default:
 			// TODO: raise an error here if we know this shouldn't happen
 			std::cout << "No matching tag " << std::to_string((uint8_t)message_type) << ", probably an error here\n";
-			return false;
+			return MESSAGE::MSG_NONE;
 	}
 
 	// std::cout << "[" << connection.socket << "] recv'd data. Current buffer:\n" << hex_dump(connection.recv_buffer); std::cout.flush(); //DEBUG
 	//delete message from buffer:
 	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
 
-	return true;
+	return message_type;
 }

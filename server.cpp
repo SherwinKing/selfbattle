@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 						bool handled_message;
 						do {
 							handled_message = false;
-							if (game.recv_message(c, &player, true)) handled_message = true;
+							if (game.recv_message(c, &player, true) != MESSAGE::MSG_NONE) handled_message = true;
 							//TODO: extend for more message types as needed
 						} while (handled_message);
 					} catch (std::exception const &e) {

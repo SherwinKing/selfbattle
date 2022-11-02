@@ -31,6 +31,7 @@ struct Connection;
 //Game state, separate from rendering.
 
 enum class MESSAGE : uint8_t {
+	MSG_NONE = 0,
 	SERVER_INIT = '1',
 	PLAYER_INPUT = '2',
 	PLAYER_READY = '3',
@@ -131,5 +132,5 @@ struct Game {
 
 	//---- communication helpers ----
 	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;
-	bool recv_message(Connection *connection_, Player *client_player, bool is_server);
+	MESSAGE recv_message(Connection *connection_, Player *client_player, bool is_server);
 };
