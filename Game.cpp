@@ -28,7 +28,7 @@ Game::Game() : mt(0x15466666) {
 		const auto& p = sprite_paths[i];
 		ImageData s;
 		load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin);
-		s.sprite_index = i;
+		s.sprite_index = static_cast<uint8_t>(i);
 		common_data->sprites.emplace_back(s);
 	}
 
@@ -38,8 +38,8 @@ Game::Game() : mt(0x15466666) {
 	common_data->characters.emplace_back( Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE, 1) );
 
 	players.reserve(2);
-	players.emplace_back(0);
-	players.emplace_back(1);
+	players.emplace_back(Player(0));
+	players.emplace_back(Player(1));
 }
 
 std::vector<MapObject> Game::create_map() {

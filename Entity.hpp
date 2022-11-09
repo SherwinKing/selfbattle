@@ -49,7 +49,7 @@ struct Character : Entity {
 		x = start_x; 
 		y = start_y;
 		tag = TAG::PLAYER_TAG;
-		this->player_id = player_id;
+		this->player_id = static_cast<uint8_t>(player_id);
 		this->sprite_index = sprite_index;
 	}
 
@@ -65,7 +65,7 @@ struct Clone : Entity {
 		x = start_x;
 		y = start_y;
 		tag = TAG::CLONE_TAG;
-		this->player_id = player_id;
+		this->player_id = static_cast<int8_t>(player_id);
 		this->sprite_index = sprite_index;
 	}
 
