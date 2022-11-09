@@ -37,13 +37,14 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	std::string port = argv[2];
-
+	std::string port;
 	std::string host;
 	if (argc >= 3) {
 		host = argv[1];
+		port = argv[2];
 	} else {
 		host = "127.0.0.1";
+		port = argv[1];
 	}
 
 	//------------ initialization ------------
