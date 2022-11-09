@@ -198,15 +198,45 @@ void Game::setup_kill_clones() {
 	common_data->characters[0].y = PLAYER1_STARTING_Y;
 	common_data->characters[1].x = PLAYER0_STARTING_X;
 	common_data->characters[1].y = PLAYER0_STARTING_Y;
+
+	time_elapsed = 0;
+
+	// Setup the shadows
+	common_data->shadows.resize(common_data->characters.size());
+	for (Character &c : common_data->characters) {
+		const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
+		common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  SPRITE::CLONE_SPRITE, c.player_id);
+	}
 }
 
 void Game::update_kill_clones(float elapsed) {
 	time_remaining -= elapsed;	
+	time_elapsed += elapsed;
 	if (time_remaining < 0) {
 		printf("Time is up!\n");
 		state = GameOver;
 		return;
 	}
+
+	// Replay character in phase 1 as shadow
+	for (Character &c : common_data->characters) {
+		while (c.phase1_replay_buffer.size() > 0) {
+			const auto & first_snapshot = c.phase1_replay_buffer[0];
+
+			// Stop replaying if we've reached the current time
+			if (first_snapshot.timestamp > time_elapsed) {
+				break;
+			}
+
+			// Replay the snapshot
+			common_data->shadows[c.player_id].x = first_snapshot.x;
+			common_data->shadows[c.player_id].y = first_snapshot.y;
+
+			// Remove the snapshot
+			c.phase1_replay_buffer.pop_front();
+		}
+	}
+
 	// TODO: win condition
 	// if (clones.size() == 0) {
 	// 	printf("You Win!\n");
@@ -465,9 +495,15 @@ void Game::send_state_message(Connection *connection_, Player *connection_player
 		connection.send(clone.hp);
 	};
 	int clone_size = common_data->clones.size();
-	connection.send(clone_size);
+	int clone_and_shadow_size = clone_size + common_data->shadows.size();
+	connection.send(clone_and_shadow_size);
 	for (int i = 0; i < clone_size; i++) {
 		send_clone(common_data->clones[i]);
+	}
+
+	// Send shadows
+	for (int i = 0; i < common_data->shadows.size(); i++) {
+		send_clone(common_data->shadows[i]);
 	}
 }
 {
