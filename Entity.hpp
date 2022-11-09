@@ -2,6 +2,7 @@
 
 #include "CommonData.hpp"
 #include "ImageRenderer.hpp"
+#include <deque>
 
 enum TAG {
 	MAP_TAG = 0,
@@ -39,10 +40,25 @@ struct MapObject : Entity {
 	}
 };
 
+struct CharacterSnapshot {
+	float x=0;
+	float y=0;
+	float timestamp=0;
+	CharacterSnapshot() = default;
+	CharacterSnapshot(float x, float y, float timestamp) {
+		this->x = x;
+		this->y = y;
+		this->timestamp = timestamp;
+	}
+};
+
 struct Character : Entity {
 	float rot = 0; 
     float hp = PLAYER_STARTING_HEALTH;
 	uint8_t player_id;
+
+	// Phase1 (Place clones) replay buffer
+	std::deque<CharacterSnapshot> phase1_replay_buffer;
 
 	Character() = default;
 	Character(float start_x, float start_y, uint8_t sprite_index, int player_id) {

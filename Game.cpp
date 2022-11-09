@@ -140,9 +140,15 @@ void Game::setup_place_clones() {
 
 void Game::update_place_clones(float elapsed) {
 	time_remaining -= elapsed;
+	time_elapsed += elapsed;
 	if (time_remaining < 0) {
 		setup_find_clones();
 		return;
+	}
+
+	// Record character snapshot
+	for (Character &c : common_data->characters) {
+		c.phase1_replay_buffer.emplace_back(c.x, c.y, time_elapsed);
 	}
 
 	// TODO: I'm putting a temporary fix here so we won't be spawning too many clones together
