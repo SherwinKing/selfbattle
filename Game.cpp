@@ -203,14 +203,239 @@ bool Clone::take_damage(float damage) {
 std::shared_ptr<Map> Player::create_map() {
 	std::shared_ptr<Map> new_map = std::make_shared<Map>();	
 	std::vector<std::shared_ptr<MapObject>>& objs = new_map->map_objects;
-	ImageData *wall_sprite = &(sprites["wall"]);
-	std::array<std::pair<float, float>, 3> wall_positions = {
-		std::pair(100.f, 340.f),
-		std::pair(250.f, 200.f),
-		std::pair(-100.f, -100.f),
+	ImageData *rw1 = &(sprites["redwall1"]);
+	ImageData *rw2 = &(sprites["redwall2"]);
+	ImageData *rw3 = &(sprites["redwall2"]);
+
+	ImageData *fh = &(sprites["fence_horizontal"]);
+	ImageData *fv = &(sprites["fence_vertical"]);
+	ImageData *fc1 = &(sprites["fence_corner1"]);
+	ImageData *fc2 = &(sprites["fence_corner2"]);
+	// ImageData *fc3 = &(sprites["fence_corner3"]);
+	// ImageData *fc4 = &(sprites["fence_corner4"]);
+	struct wp {
+		wp(float x, float y, ImageData *id) {
+			this->x = x;
+			this->y = y;
+			this->id = id;
+		}
+		float x;
+		float y;
+		ImageData *id;
 	};
-	for (auto p : wall_positions) {
-		objs.emplace_back(std::make_shared<MapObject>(p.first, p.second, wall_sprite));	
+	std::vector<wp> walls = {
+		// BLUE
+		// 2
+		wp(600.f, -200.f, rw3),
+		wp(400.f, -200.f, rw1),
+		wp(200.f, -200.f, rw2),
+		wp(0.f, -200.f, rw3),
+
+		// 3
+		wp(800.f, 0.f, rw3),
+
+		// 4
+		wp(600.f, 200.f, rw3),
+		wp(400.f, 200.f, rw1),
+		wp(200.f, 200.f, rw2),
+		wp(0.f, 200.f, rw3),
+
+		// 1
+		wp(600.f, -800.f, rw3),
+		wp(400.f, -800.f, rw1),
+		wp(200.f, -800.f, rw2),
+		wp(0.f, -800.f, rw3),
+
+		// 5
+		wp(600.f, 800.f, rw3),
+		wp(400.f, 800.f, rw1),
+		wp(200.f, 800.f, rw2),
+		wp(0.f, 800.f, rw3),
+
+		// 6
+		wp(800.f, 1000.f, rw3),
+		wp(800.f, 1200.f, rw1),
+
+		// 11
+		wp(800.f, -1000.f, rw3),
+		wp(800.f, -1200.f, rw1),
+		wp(800.f, -1400.f, rw2),
+		wp(800.f, -1600.f, rw3),
+
+		// 12
+		wp(1000.f, -1800.f, rw3),
+		wp(1200.f, -1800.f, rw3),
+		wp(1400.f, -1800.f, rw3),
+		wp(1600.f, -1800.f, rw3),
+		wp(1800.f, -1800.f, rw3),
+		wp(2000.f, -1800.f, rw3),
+		wp(2200.f, -1800.f, rw3),
+		wp(2400.f, -1800.f, rw3),
+		wp(2600.f, -1800.f, rw3),
+		wp(2800.f, -1800.f, rw3),
+		wp(3000.f, -1800.f, rw3),
+		wp(3200.f, -1800.f, rw3),
+		wp(3400.f, -1800.f, rw3),
+		wp(3600.f, -1800.f, rw3),
+		wp(3800.f, -1800.f, rw3),
+		wp(4000.f, -1800.f, rw3),
+		wp(4200.f, -1800.f, rw3),
+		wp(4400.f, -1800.f, rw3),
+		wp(4600.f, -1800.f, rw3),
+		wp(4800.f, -1800.f, rw3),
+		wp(5000.f, -1800.f, rw3),
+
+		// 13
+		wp(1000.f, 1400.f, rw3),
+		wp(1200.f, 1400.f, rw3),
+		wp(1400.f, 1400.f, rw3),
+		wp(1600.f, 1400.f, rw3),
+		wp(1800.f, 1400.f, rw3),
+		wp(2000.f, 1400.f, rw3),
+		wp(2200.f, 1400.f, rw3),
+		wp(2400.f, 1400.f, rw3),
+		wp(2600.f, 1400.f, rw3),
+		wp(2800.f, 1400.f, rw3),
+		wp(3000.f, 1400.f, rw3),
+		wp(3200.f, 1400.f, rw3),
+		wp(3400.f, 1400.f, rw3),
+		wp(3600.f, 1400.f, rw3),
+		wp(3800.f, 1400.f, rw3),
+		wp(4000.f, 1400.f, rw3),
+		wp(4200.f, 1400.f, rw3),
+		wp(4400.f, 1400.f, rw3),
+		wp(4600.f, 1400.f, rw3),
+		wp(4800.f, 1400.f, rw3),
+		wp(5000.f, 1400.f, rw3),
+
+		// 15
+		wp(2400.f, 1200.f, rw3),
+		wp(2400.f, 1000.f, rw3),
+		wp(2400.f, 800.f, rw3),
+		wp(2400.f, 600.f, rw3),
+
+		// 8
+		wp(1800.f, 1000.f, rw3),
+		wp(1800.f, 800.f, rw3),
+		wp(1800.f, 600.f, rw3),
+		wp(1800.f, 400.f, rw3),
+		wp(1800.f, 200.f, rw3),
+		wp(1800.f, 0.f, rw3),
+		wp(1800.f, -200.f, rw3),
+		wp(1800.f, -400.f, rw3),
+		wp(1800.f, -600.f, rw3),
+		wp(1800.f, -800.f, rw3),
+		wp(1800.f, -1000.f, rw3),
+
+		// 23
+		wp(2000.f, -1000.f, rw3),
+		wp(2200.f, -1000.f, rw3),
+		wp(2400.f, -1000.f, rw3),
+		wp(2600.f, -1000.f, rw3),
+		wp(2800.f, -1000.f, rw3),
+
+		// 20
+		wp(2400.f, -400.f, rw3),
+		wp(2400.f, -200.f, rw3),
+
+		// 25
+		wp(2400.f, -1600.f, rw3),
+		wp(2400.f, -1400.f, rw3),
+
+		// 17
+		wp(3000.f, 0.f, rw3),
+		wp(3000.f, 200.f, rw3),
+		wp(3000.f, 400.f, rw3),
+		wp(3000.f, 600.f, rw3),
+		wp(3000.f, 800.f, rw3),
+		wp(3000.f, 800.f, rw3),
+		wp(3000.f, 1000.f, rw3),
+
+		// 16
+		wp(3200.f, 1000.f, rw3),
+		wp(3400.f, 1000.f, rw3),
+		wp(3600.f, 1000.f, rw3),
+
+		// 18
+		wp(4000.f, 1200.f, rw3),
+		wp(4000.f, 1000.f, rw3),
+		wp(4000.f, 800.f, rw3),
+		wp(4000.f, 600.f, rw3),
+
+		// 19
+		wp(3800.f, 600.f, rw3),
+		wp(3600.f, 600.f, rw3),
+
+		// 21
+		wp(3600.f, 0.f, rw3),
+		wp(3600.f, -200.f, rw3),
+		wp(3600.f, -400.f, rw3),
+		wp(3600.f, -600.f, rw3),
+		wp(3600.f, -800.f, rw3),
+		wp(3600.f, -1000.f, rw3),
+
+		// 22
+		wp(3400.f, -600.f, rw3),
+
+		// 23
+		wp(4200.f, 400.f, rw3),
+		wp(4200.f, -100.f, rw3),
+		wp(4200.f, -600.f, rw3),
+		wp(4200.f, -1100.f, rw3),
+		wp(4800.f, 400.f, rw3),
+		wp(4800.f, -100.f, rw3),
+		wp(4800.f, -600.f, rw3),
+		wp(4800.f, -1100.f, rw3),
+
+		// 24
+		wp(5200.f, 1400.f, rw3),
+		wp(5200.f, 1200.f, rw3),
+		wp(5200.f, 1000.f, rw3),
+		wp(5200.f, 800.f, rw3),
+		wp(5200.f, 600.f, rw3),
+		wp(5200.f, 400.f, rw3),
+		wp(5200.f, 200.f, rw3),
+		wp(5200.f, 00.f, rw3),
+		wp(5200.f, -200.f, rw3),
+		wp(5200.f, -400.f, rw3),
+		wp(5200.f, -600.f, rw3),
+		wp(5200.f, -800.f, rw3),
+		wp(5200.f, -1000.f, rw3),
+		wp(5200.f, -1200.f, rw3),
+		wp(5200.f, -1400.f, rw3),
+		wp(5200.f, -1600.f, rw3),
+		wp(5200.f, -1800.f, rw3),
+
+
+		// RED
+		// 2
+		wp(-600.f, -200.f, fc1),
+		wp(-400.f, -200.f, fh),
+		wp(-200.f, -200.f, fh),
+
+		// 10
+		wp(-600.f, 0.f, fv),
+
+		// 4
+		wp(-600.f, 200.f, fc2),
+		wp(-400.f, 200.f, fh),
+		wp(-200.f, 200.f, fh),
+
+		// 1
+		// wp(-600.f, -800.f, rw3),
+		// wp(-400.f, -800.f, rw1),
+		// wp(-200.f, -800.f, rw2),
+		// wp(0.f, -800.f, rw3),
+
+		// 5
+		// wp(600.f, 800.f, rw3),
+		// wp(400.f, 800.f, rw1),
+		// wp(200.f, 800.f, rw2),
+		// wp(0.f, 800.f, rw3),
+
+	};
+	for (auto w : walls) {
+		objs.emplace_back(std::make_shared<MapObject>(w.x, w.y, w.id));	
 	}
 	return new_map;
 }

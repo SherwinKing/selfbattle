@@ -36,7 +36,7 @@ struct Connection;
 //Currently set up for a "client sends controls" / "server sends whole state" situation.
 constexpr float CLONE_STARTING_HEALTH = 50.f;
 constexpr float PLAYER_STARTING_HEALTH = 100.f;
-constexpr float PLAYER1_STARTING_X = 0.f;
+constexpr float PLAYER1_STARTING_X = 1000.f;
 constexpr float PLAYER1_STARTING_Y = 0.f;
 constexpr float PLAYER2_STARTING_X = 0.f;
 constexpr float PLAYER2_STARTING_Y = 0.f;
@@ -165,15 +165,23 @@ struct Player {
 		// I originally had this at the top of the file but this was giving issues with 
 		// the make and I didn't have the time/couldn't be bothered to spend hours trying
 		// to figure out why it was doing this, so i just moved it here for now.
-		constexpr uint32_t NUM_SPRITES = 4;
-		std::array<std::pair<const char *, const char *>, NUM_SPRITES> sprite_paths = {
+		std::vector<std::pair<const char *, const char *>> sprite_paths = {
 			std::pair("player0", "sprites/test.png"),
 			std::pair("clone", "sprites/clone.png"),
 			std::pair("wall", "sprites/wall.png"),
-			std::pair("bullet", "sprites/bullet.png")	
+			std::pair("bullet", "sprites/bullet.png"),
+			std::pair("redwall1", "sprites/redwall1.png"),
+			std::pair("redwall2", "sprites/redwall2.png"),
+			std::pair("redwall3", "sprites/redwall3.png"),
+			std::pair("fence_horizontal", "sprites/fence_1.png"),
+			std::pair("fence_vertical", "sprites/fence_2.png"),
+			std::pair("fence_corner1", "sprites/fence_corner_1.png"),
+			std::pair("fence_corner2", "sprites/fence_corner_2.png"),
+			std::pair("fence_corner3", "sprites/fence_corner_3.png"),
+			std::pair("fence_corner4", "sprites/fence_corner_4.png"),
 		};
 		
-		for (size_t i = 0; i < NUM_SPRITES; ++i) {
+		for (size_t i = 0; i < sprite_paths.size(); ++i) {
             const auto& p = sprite_paths[i];
             ImageData s;
             load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin); 
