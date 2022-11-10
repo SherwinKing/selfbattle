@@ -508,7 +508,14 @@ void Player::try_shooting() {
 } 
 
 void Player::place_clone() {
-	Clone clone = Clone(mouse_x, mouse_y, SPRITE::CLONE_SPRITE_BLUE, player_id); 
+	SPRITE clone_sprite;
+	// determine clone color by player id: 0 for red, 1 for blue
+	if (player_id == 0) {
+		clone_sprite = SPRITE::CLONE_SPRITE_RED;
+	} else {
+		clone_sprite = SPRITE::CLONE_SPRITE_BLUE;
+	}
+	Clone clone = Clone(mouse_x, mouse_y, clone_sprite, player_id); 
 	CommonData::get_instance()->clones.emplace_back(clone);	
 }
 
@@ -574,8 +581,15 @@ void Game::setup_kill_clones() {
 	// Setup the shadows
 	common_data->shadows.resize(common_data->characters.size());
 	for (Character &c : common_data->characters) {
+		SPRITE shadow_sprite;
+		// determine clone color by player id: 0 for red, 1 for blue
+		if (c.player_id == 0) {
+			shadow_sprite = SPRITE::CLONE_SPRITE_RED;
+		} else {
+			shadow_sprite = SPRITE::CLONE_SPRITE_BLUE;
+		}
 		const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
-		common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  SPRITE::CLONE_SPRITE, c.player_id);
+		common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  shadow_sprite, c.player_id);
 	}
 }
 
