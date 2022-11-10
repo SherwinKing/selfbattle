@@ -36,7 +36,7 @@ struct Connection;
 //Currently set up for a "client sends controls" / "server sends whole state" situation.
 constexpr float CLONE_STARTING_HEALTH = 50.f;
 constexpr float PLAYER_STARTING_HEALTH = 100.f;
-constexpr float PLAYER1_STARTING_X = 1000.f;
+constexpr float PLAYER1_STARTING_X = -1000.f;
 constexpr float PLAYER1_STARTING_Y = 0.f;
 constexpr float PLAYER2_STARTING_X = 0.f;
 constexpr float PLAYER2_STARTING_Y = 0.f;
