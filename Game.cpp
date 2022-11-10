@@ -228,6 +228,20 @@ void Game::update_kill_clones(float elapsed) {
 			if (bullet.collide(clone)) {
 				clone.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
+
+				if (clone.hp <= 0) {
+					common_data->characters[clone.player_id].score++;
+				}
+			}
+		}
+		for (Shadow &shadow : common_data->shadows) {
+			if (bullet.collide(shadow)) {
+				shadow.take_damage(BULLET_DAMAGE);
+				bullet.active = false;
+
+				if (shadow.hp <= 0) {
+					common_data->characters[shadow.player_id].score++;
+				}
 			}
 		}
 		for (Character &character : common_data->characters) {

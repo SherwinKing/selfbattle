@@ -56,6 +56,7 @@ struct Character : Entity {
 	float rot = 0; 
     float hp = PLAYER_STARTING_HEALTH;
 	uint8_t player_id;
+	uint32_t score = 0;
 
 	// Phase1 (Place clones) replay buffer
 	std::deque<CharacterSnapshot> phase1_replay_buffer;
