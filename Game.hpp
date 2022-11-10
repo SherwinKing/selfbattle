@@ -76,6 +76,7 @@ struct Player {
 	void set_position(float new_x, float new_y);
 	void place_clone();
 	void try_shooting (); 
+	void read_player_data(const Player &other_player);
 };
 
 struct MessageInfo {

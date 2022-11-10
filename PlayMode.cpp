@@ -133,7 +133,7 @@ void PlayMode::update(float elapsed) {
 						case MESSAGE::PLAYER_INPUT:
 							assert(temp_player.player_id != player_id);
 							assert(game.players[temp_player.player_id].player_id == temp_player.player_id);
-							game.players[temp_player.player_id] = temp_player;
+							game.players[temp_player.player_id].read_player_data(temp_player);
 							break;
 						case MESSAGE::SERVER_READY:
 							// all computations are already done in game

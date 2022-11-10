@@ -119,6 +119,17 @@ void Player::place_clone() {
 	CommonData::get_instance()->clones.emplace_back(clone);	
 }
 
+void Player::read_player_data(const Player &other_player) {
+	this->player_id = other_player.player_id;
+	this->left = other_player.left;
+	this->right = other_player.right;
+	this->up = other_player.up;
+	this->down = other_player.down;
+	this->mouse = other_player.mouse;
+	this->mouse_x = other_player.mouse_x;
+	this->mouse_y = other_player.mouse_y;
+}
+
 void Game::remove_player(Player *player) {
 	bool found = false;
 	for (auto pi = players.begin(); pi != players.end(); ++pi) {
