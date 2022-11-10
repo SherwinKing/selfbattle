@@ -314,6 +314,7 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 	};
 
 	auto send_player = [&](Player const &player) {
+		connection.send(player.player_id);
 		connection.send(player.left.state);
 		connection.send(player.right.state);
 		connection.send(player.up.state);
@@ -388,6 +389,7 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 	};
 
 	auto read_player = [&](Player *player) {
+		read(&player->player_id);
 		read(&player->left.state);
 		read(&player->right.state);
 		read(&player->up.state);
@@ -418,6 +420,7 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			assert(is_server);
 			client_player->ready = true;
 			if (players[0].ready && players[1].ready) {
+				ready = true;
 				message_queue.push_back(MessageInfo(MESSAGE::SERVER_READY, 1));
 				message_queue.push_back(MessageInfo(MESSAGE::SERVER_READY, 0));
 			}

@@ -33,17 +33,18 @@ int main(int argc, char **argv) {
 	//------------ argument parsing ------------
 
 	if (argc < 2) {
-		std::cerr << "Usage:\n\t./server <port> [<host>]" << std::endl;
+		std::cerr << "Usage:\n\t./server [<host>] <port>" << std::endl;
 		return 1;
 	}
 
-	std::string port = argv[1];
-
+	std::string port;
 	std::string host;
 	if (argc >= 3) {
-		host = argv[2];
+		host = argv[1];
+		port = argv[2];
 	} else {
 		host = "127.0.0.1";
+		port = argv[1];
 	}
 
 	//------------ initialization ------------

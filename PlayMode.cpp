@@ -14,6 +14,12 @@
 PlayMode::PlayMode(Client &client_) : client(client_) {
 	common_data = CommonData::get_instance();
 	text_renderer = TextRenderer("font/Roboto/Roboto-Regular.ttf");
+	if (single_player) {
+		std::cout << "Playing in Single Player Mode.\n";
+	}
+	else {
+		std::cout << "Playing in Miltiplayer Mode.\n";
+	}
 }
 
 PlayMode::~PlayMode() {
@@ -125,8 +131,12 @@ void PlayMode::update(float elapsed) {
 							character = &common_data->characters[player_id];
 							break;
 						case MESSAGE::PLAYER_INPUT:
-							// TODO: assign value for the other player
+							assert(temp_player.player_id != player_id);
+							assert(game.players[temp_player.player_id].player_id == temp_player.player_id);
+							game.players[temp_player.player_id] = temp_player;
+							break;
 						case MESSAGE::SERVER_READY:
+							// all computations are already done in game
 							break;
 						default:
 							handled_message = false;
