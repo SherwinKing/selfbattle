@@ -728,7 +728,9 @@ void Game::update(float elapsed) {
 						clone_num++;
 					}
 				}
-				player.place_clone();
+				if (clone_num < NUM_CLONES) {
+					player.place_clone();
+				}
 			}
 			if (state == KillClones) {
 				player.try_shooting();
