@@ -219,6 +219,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		draw_entity(clone);
 	}
 
+	for (Shadow shadow : common_data->shadows) {
+		draw_entity(shadow);
+	}
+
 	for (MapObject map_obj : common_data->map_objects) {
 		draw_entity(map_obj);
 	}
@@ -261,6 +265,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	std::string hp_text = "HP: " + float_to_string(character->hp);
 	text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+	
+	std::string score_text = "Score: " + std::to_string(character->score);
+	text_renderer.render_text(hp_text, 0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 	GL_ERRORS();
 }

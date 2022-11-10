@@ -60,6 +60,7 @@ struct Bullet;
 struct Clone;
 struct ImageData;
 struct Character;
+typedef Clone Shadow;
 
 // It is a singleton for now, might be changed in the future
 // https://refactoring.guru/design-patterns/singleton/cpp/example
@@ -69,6 +70,7 @@ struct CommonData {
 	std::vector<Clone> clones;
     std::vector<ImageData> sprites;
     std::vector<Character> characters; // character_id is player_id
+    std::vector<Shadow> shadows;
 
     CommonData() {
 

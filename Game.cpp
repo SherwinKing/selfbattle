@@ -508,7 +508,14 @@ void Player::try_shooting() {
 } 
 
 void Player::place_clone() {
-	Clone clone = Clone(mouse_x, mouse_y, SPRITE::CLONE_SPRITE_BLUE, player_id); 
+	SPRITE clone_sprite;
+	// determine clone color by player id: 0 for red, 1 for blue
+	if (player_id == 0) {
+		clone_sprite = SPRITE::CLONE_SPRITE_RED;
+	} else {
+		clone_sprite = SPRITE::CLONE_SPRITE_BLUE;
+	}
+	Clone clone = Clone(mouse_x, mouse_y, clone_sprite, player_id); 
 	CommonData::get_instance()->clones.emplace_back(clone);	
 }
 
@@ -543,9 +550,15 @@ void Game::setup_place_clones() {
 
 void Game::update_place_clones(float elapsed) {
 	time_remaining -= elapsed;
+	time_elapsed += elapsed;
 	if (time_remaining < 0) {
 		setup_find_clones();
 		return;
+	}
+
+	// Record character snapshot
+	for (Character &c : common_data->characters) {
+		c.phase1_replay_buffer.emplace_back(c.x, c.y, time_elapsed);
 	}
 }
 
@@ -573,15 +586,52 @@ void Game::setup_kill_clones() {
 	common_data->characters[0].y = PLAYER1_STARTING_Y;
 	common_data->characters[1].x = PLAYER0_STARTING_X;
 	common_data->characters[1].y = PLAYER0_STARTING_Y;
+
+	time_elapsed = 0;
+
+	// Setup the shadows
+	common_data->shadows.resize(common_data->characters.size());
+	for (Character &c : common_data->characters) {
+		SPRITE shadow_sprite;
+		// determine clone color by player id: 0 for red, 1 for blue
+		if (c.player_id == 0) {
+			shadow_sprite = SPRITE::CLONE_SPRITE_RED;
+		} else {
+			shadow_sprite = SPRITE::CLONE_SPRITE_BLUE;
+		}
+		const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
+		common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  shadow_sprite, c.player_id);
+	}
 }
 
 void Game::update_kill_clones(float elapsed) {
 	time_remaining -= elapsed;	
+	time_elapsed += elapsed;
 	if (time_remaining < 0) {
 		printf("Time is up!\n");
 		state = GameOver;
 		return;
 	}
+
+	// Replay character in phase 1 as shadow
+	for (Character &c : common_data->characters) {
+		while (c.phase1_replay_buffer.size() > 0) {
+			const auto & first_snapshot = c.phase1_replay_buffer[0];
+
+			// Stop replaying if we've reached the current time
+			if (first_snapshot.timestamp > time_elapsed) {
+				break;
+			}
+
+			// Replay the snapshot
+			common_data->shadows[c.player_id].x = first_snapshot.x;
+			common_data->shadows[c.player_id].y = first_snapshot.y;
+
+			// Remove the snapshot
+			c.phase1_replay_buffer.pop_front();
+		}
+	}
+
 	// TODO: win condition
 	// if (clones.size() == 0) {
 	// 	printf("You Win!\n");
@@ -596,6 +646,20 @@ void Game::update_kill_clones(float elapsed) {
 			if (bullet.collide(clone)) {
 				clone.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
+
+				if (clone.hp <= 0) {
+					common_data->characters[clone.player_id].score++;
+				}
+			}
+		}
+		for (Shadow &shadow : common_data->shadows) {
+			if (bullet.collide(shadow)) {
+				shadow.take_damage(BULLET_DAMAGE);
+				bullet.active = false;
+
+				if (shadow.hp <= 0) {
+					common_data->characters[shadow.player_id].score++;
+				}
 			}
 		}
 		for (Character &character : common_data->characters) {
