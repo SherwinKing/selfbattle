@@ -242,18 +242,24 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 	// formatting time manually because I wasn't able to find a library function
-	std::string time_text = std::to_string(game.time_remaining);
-	int period_index = 0;
-	for (int i = 0; i < time_text.size(); i++) {
-		if (time_text[i] == '.') {
-			period_index = i;
-			break;
+	auto float_to_string = [](float f) {
+		std::string text = std::to_string(f);
+		int period_index = 0;
+		for (int i = 0; i < text.size(); i++) {
+			if (text[i] == '.') {
+				period_index = i;
+				break;
+			}
 		}
-	}
-	time_text = time_text.substr(0, period_index + 3);
+		text = text.substr(0, period_index + 3);
+
+		return text;
+	};
+	
+	std::string time_text = float_to_string(game.time_remaining);
 	text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
-	std::string hp_text = "HP: " + std::to_string(character->hp);
+	std::string hp_text = "HP: " + float_to_string(character->hp);
 	text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 	GL_ERRORS();
