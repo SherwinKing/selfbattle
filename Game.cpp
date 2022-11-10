@@ -693,6 +693,13 @@ void Game::update_kill_clones(float elapsed) {
 		common_data->clones.end()
 	);
 
+	common_data->shadows.erase(
+		std::remove_if(common_data->shadows.begin(),
+					   common_data->shadows.end(),
+					   [](Clone clone){return clone.hp <= 0;}),
+		common_data->shadows.end()
+	);
+
 	for (Player &player : players) {
 		player.shoot_interval -= elapsed;
 	}
