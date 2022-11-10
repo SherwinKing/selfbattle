@@ -184,7 +184,7 @@ void poll_connections(
 //---------------------------------
 
 
-Server::Server(std::string const &port, std::string const &host) {
+Server::Server(std::string const &host, std::string const &port) {
 
 	#ifdef _WIN32
 	{ //init winsock:

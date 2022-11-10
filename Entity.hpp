@@ -4,7 +4,7 @@
 #include "ImageRenderer.hpp"
 #include <deque>
 
-enum TAG {
+enum TAG : uint8_t {
 	MAP_TAG = 0,
 	CLONE_TAG = 1,
 	PLAYER_TAG = 2,
@@ -21,8 +21,8 @@ struct Entity {
 	BoundingBox box;
 	float x;
 	float y;
-	uint8_t sprite_index;
-	uint8_t player_id = -1;
+	SPRITE sprite_index;
+	int8_t player_id = -1;
 	TAG tag;
 
 	void move(float dx, float dy);
@@ -32,7 +32,7 @@ struct Entity {
 
 struct MapObject : Entity {
 	MapObject() = default;	
-	MapObject(float start_x, float start_y, uint8_t sprite_index) {
+	MapObject(float start_x, float start_y, SPRITE sprite_index) {
 		x = start_x;
 		y = start_y;
 		this->sprite_index = sprite_index;
@@ -61,11 +61,11 @@ struct Character : Entity {
 	std::deque<CharacterSnapshot> phase1_replay_buffer;
 
 	Character() = default;
-	Character(float start_x, float start_y, uint8_t sprite_index, int player_id) {
+	Character(float start_x, float start_y, SPRITE sprite_index, int player_id) {
 		x = start_x; 
 		y = start_y;
 		tag = TAG::PLAYER_TAG;
-		this->player_id = player_id;
+		this->player_id = static_cast<uint8_t>(player_id);
 		this->sprite_index = sprite_index;
 	}
 
@@ -77,11 +77,11 @@ struct Clone : Entity {
 	float hp = CLONE_STARTING_HEALTH;
 
 	Clone() = default;
-	Clone(float start_x, float start_y, uint8_t sprite_index, int player_id) {
+	Clone(float start_x, float start_y, SPRITE sprite_index, int player_id) {
 		x = start_x;
 		y = start_y;
 		tag = TAG::CLONE_TAG;
-		this->player_id = player_id;
+		this->player_id = static_cast<int8_t>(player_id);
 		this->sprite_index = sprite_index;
 	}
 
@@ -95,7 +95,7 @@ struct Bullet : Entity {
 	bool active = true;
 
 	Bullet() = default;
-	Bullet(float start_x, float start_y, uint8_t sprite_index, glm::vec2& bullet_velo, int shooter_id) {
+	Bullet(float start_x, float start_y, SPRITE sprite_index, glm::vec2& bullet_velo, int shooter_id) {
 		velo = bullet_velo;
 		x = start_x;
 		y = start_y;

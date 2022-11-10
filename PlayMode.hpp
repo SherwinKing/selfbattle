@@ -27,8 +27,10 @@ struct PlayMode : Mode {
 	//----- game state -----
 	ImageRenderer img_renderer;
 	TextRenderer text_renderer;
-	Player player;
-	Character character;
+	int8_t player_id = -1;
+	Player *player = nullptr;
+	Character *character = nullptr;
+	bool single_player = false;
 
 	CommonData *common_data;
 

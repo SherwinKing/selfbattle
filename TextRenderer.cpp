@@ -152,7 +152,7 @@ RenderResult TextRenderer::render_text(std::string text, float x, float y, glm::
 			render_char_num = 1;
 			next_word_id_increment = 0;
 		} else {
-			render_char_num = words[next_word_id].length();
+			render_char_num = static_cast<uint32_t>(words[next_word_id].length());
 			next_word_id_increment = 1;
 		}
 

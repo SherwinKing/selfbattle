@@ -65,7 +65,7 @@ public:
 	}
 
 	inline float get_line_height_by_font_size(uint32_t font_size) {
-		return sy * font_size * 1.2;
+		return sy * font_size * 1.2f;
 	}
 
 	/**
