@@ -15,16 +15,32 @@
 //-----------------------------------------
 
 Game::Game() : mt(0x15466666) {
-	std::array<std::pair<uint32_t, const char *>, NUM_SPRITES> sprite_paths = {
-		std::pair(SPRITE::PLAYER_SPRITE, "sprites/test.png"),
+	std::vector<std::pair<uint32_t, const char *>> sprite_paths = {
+		std::pair(SPRITE::PLAYER_SPRITE_RED, "sprites/test.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_BLUE, "sprites/test.png"),
 		std::pair(SPRITE::CLONE_SPRITE, "sprites/clone.png"),
 		std::pair(SPRITE::WALL_SPRITE, "sprites/wall.png"),
-		std::pair(SPRITE::BULLET_SPRITE, "sprites/bullet.png")	
+		std::pair(SPRITE::BULLET_SPRITE, "sprites/bullet.png"),	
+		std::pair(SPRITE::FENCE_SELF_H, "sprites/fence_self_h.png"),
+		std::pair(SPRITE::FENCE_SELF_V, "sprites/fence_self_v.png"),
+		std::pair(SPRITE::FENCE_HALF_T, "sprites/fence_half_t.png"),
+		std::pair(SPRITE::FENCE_HALF_R, "sprites/fence_half_r.png"),
+		std::pair(SPRITE::FENCE_HALF_B, "sprites/fence_half_b.png"),
+		std::pair(SPRITE::FENCE_HALF_L, "sprites/fence_half_l.png"),
+		std::pair(SPRITE::FENCE_FULL_H, "sprites/fence_full_h.png"),
+		std::pair(SPRITE::FENCE_FULL_V, "sprites/fence_full_v.png"),
+		std::pair(SPRITE::FENCE_CORNER_TR, "sprites/fence_corner_tr.png"),
+		std::pair(SPRITE::FENCE_CORNER_RB, "sprites/fence_corner_rb.png"),
+		std::pair(SPRITE::FENCE_CORNER_BL, "sprites/fence_corner_bl.png"),
+		std::pair(SPRITE::FENCE_CORNER_LT, "sprites/fence_corner_lt.png"),
+		std::pair(SPRITE::CLOCK_1, "sprites/clock_1.png"),
+		std::pair(SPRITE::CLOCK_2, "sprites/clock_2.png"),
+		std::pair(SPRITE::CLOCK_3, "sprites/clock_3.png"),
 	};
 	
 	common_data = CommonData::get_instance();
 
-	for (size_t i = 0; i < NUM_SPRITES; ++i) {
+	for (size_t i = 0; i < sprite_paths.size(); ++i) {
 		const auto& p = sprite_paths[i];
 		ImageData s;
 		load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin);
@@ -34,8 +50,8 @@ Game::Game() : mt(0x15466666) {
 
 	common_data->map_objects = create_map();
 	common_data->characters.reserve(2);
-	common_data->characters.emplace_back( Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE, 0) );
-	common_data->characters.emplace_back( Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE, 1) );
+	common_data->characters.emplace_back( Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 0) );
+	common_data->characters.emplace_back( Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 1) );
 
 	players.reserve(2);
 	players.emplace_back(Player(0));

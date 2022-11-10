@@ -27,12 +27,27 @@ constexpr float KILL_CLONE_PHASE_DURATION = 30.f;
 constexpr uint32_t NUM_CLONES = 2;
 
 
-constexpr uint32_t NUM_SPRITES = 4;
 enum SPRITE : uint8_t {
-    PLAYER_SPRITE = 0,
-    CLONE_SPRITE = 1,
-    WALL_SPRITE = 2,
-    BULLET_SPRITE = 3,
+    PLAYER_SPRITE_RED,
+    PLAYER_SPRITE_BLUE,
+    CLONE_SPRITE,
+    WALL_SPRITE,
+    BULLET_SPRITE,
+    FENCE_SELF_H,
+    FENCE_SELF_V,
+    FENCE_HALF_T,
+    FENCE_HALF_R,
+    FENCE_HALF_B,
+    FENCE_HALF_L,
+    FENCE_FULL_H,
+    FENCE_FULL_V,
+    FENCE_CORNER_TR,
+    FENCE_CORNER_RB,
+    FENCE_CORNER_BL,
+    FENCE_CORNER_LT,
+    CLOCK_1,
+    CLOCK_2,
+    CLOCK_3 
 };
 
 struct MapObject;
