@@ -43,6 +43,6 @@ bool Clone::take_damage(float damage) {
 }
 
 void Bullet::move_bullet(float elapsed) {
-	this->move(elapsed * velo.x * BULLET_SPEED, elapsed * velo.y * BULLET_SPEED);	
+	this->move(elapsed * velo.x, elapsed * velo.y);	
 	lifetime += elapsed;
 }
