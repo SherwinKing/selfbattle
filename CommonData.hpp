@@ -10,7 +10,7 @@ constexpr float PLAYER0_STARTING_Y = -300.f;
 constexpr float PLAYER1_STARTING_X = -100.f;
 constexpr float PLAYER1_STARTING_Y = 300.f;
 constexpr float PLAYER_SPEED = 20.f;
-constexpr float BULLET_SPEED = 80.f;
+constexpr float BULLET_SPEED = 200.f;
 constexpr float BULLET_DAMAGE = 10.f;
 constexpr float BULLET_LIFETIME = 10.f;
 constexpr float BULLET_INTERVAL = 0.8f;
@@ -19,9 +19,9 @@ constexpr float BULLET_INTERVAL = 0.8f;
 constexpr float PLAYER_SIZE = 71.f;
 
 
-constexpr float PLACE_CLONE_PHASE_DURATION = 60.f;
-constexpr float FIND_CLONE_PHASE_DURATION = 10.f;
-constexpr float KILL_CLONE_PHASE_DURATION = 30.f;
+constexpr float PLACE_CLONE_PHASE_DURATION = 40.f;
+constexpr float FIND_CLONE_PHASE_DURATION = 30.f;
+constexpr float KILL_CLONE_PHASE_DURATION = 50.f;
 
 
 constexpr uint32_t NUM_CLONES = 2;
