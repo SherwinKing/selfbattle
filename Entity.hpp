@@ -60,6 +60,7 @@ struct Character : Entity {
 
 	// Phase1 (Place clones) replay buffer
 	std::deque<CharacterSnapshot> phase1_replay_buffer;
+	std::deque<CharacterSnapshot> phase1_replay_buffer_2;
 
 	Character() = default;
 	Character(float start_x, float start_y, SPRITE sprite_index, int player_id) {
