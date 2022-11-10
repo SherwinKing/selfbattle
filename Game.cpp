@@ -15,16 +15,37 @@
 //-----------------------------------------
 
 Game::Game() : mt(0x15466666) {
-	std::array<std::pair<uint32_t, const char *>, NUM_SPRITES> sprite_paths = {
-		std::pair(SPRITE::PLAYER_SPRITE, "sprites/test.png"),
-		std::pair(SPRITE::CLONE_SPRITE, "sprites/clone.png"),
+	std::vector<std::pair<uint32_t, const char *>> sprite_paths = {
+		std::pair(SPRITE::PLAYER_SPRITE_RED, "sprites/player_sprite_red.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_BLUE, "sprites/player_sprite_blue.png"),
+		std::pair(SPRITE::CLONE_SPRITE_RED, "sprites/clone_sprite_red.png"),
+		std::pair(SPRITE::CLONE_SPRITE_BLUE, "sprites/clone_sprite_blue.png"),
 		std::pair(SPRITE::WALL_SPRITE, "sprites/wall.png"),
-		std::pair(SPRITE::BULLET_SPRITE, "sprites/bullet.png")	
+		std::pair(SPRITE::BULLET_SPRITE, "sprites/bullet.png"),	
+		std::pair(SPRITE::FENCE_SELF_H, "sprites/fence_self_h.png"),
+		std::pair(SPRITE::FENCE_SELF_V, "sprites/fence_self_v.png"),
+		std::pair(SPRITE::FENCE_HALF_T, "sprites/fence_half_t.png"),
+		std::pair(SPRITE::FENCE_HALF_R, "sprites/fence_half_r.png"),
+		std::pair(SPRITE::FENCE_HALF_B, "sprites/fence_half_b.png"),
+		std::pair(SPRITE::FENCE_HALF_L, "sprites/fence_half_l.png"),
+		std::pair(SPRITE::FENCE_FULL_H, "sprites/fence_full_h.png"),
+		std::pair(SPRITE::FENCE_FULL_V, "sprites/fence_full_v.png"),
+		std::pair(SPRITE::FENCE_T_T, "sprites/fence_t_t.png"),
+		std::pair(SPRITE::FENCE_T_R, "sprites/fence_t_r.png"),
+		std::pair(SPRITE::FENCE_T_B, "sprites/fence_t_b.png"),
+		std::pair(SPRITE::FENCE_T_L, "sprites/fence_t_l.png"),
+		std::pair(SPRITE::FENCE_CORNER_TR, "sprites/fence_corner_tr.png"),
+		std::pair(SPRITE::FENCE_CORNER_RB, "sprites/fence_corner_rb.png"),
+		std::pair(SPRITE::FENCE_CORNER_BL, "sprites/fence_corner_bl.png"),
+		std::pair(SPRITE::FENCE_CORNER_LT, "sprites/fence_corner_lt.png"),
+		std::pair(SPRITE::CLOCK_1, "sprites/clock_1.png"),
+		std::pair(SPRITE::CLOCK_2, "sprites/clock_2.png"),
+		std::pair(SPRITE::CLOCK_3, "sprites/clock_3.png"),
 	};
 	
 	common_data = CommonData::get_instance();
 
-	for (size_t i = 0; i < NUM_SPRITES; ++i) {
+	for (size_t i = 0; i < sprite_paths.size(); ++i) {
 		const auto& p = sprite_paths[i];
 		ImageData s;
 		load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin);
@@ -34,8 +55,8 @@ Game::Game() : mt(0x15466666) {
 
 	common_data->map_objects = create_map();
 	common_data->characters.reserve(2);
-	common_data->characters.emplace_back( Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE, 0) );
-	common_data->characters.emplace_back( Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE, 1) );
+	common_data->characters.emplace_back( Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0) );
+	common_data->characters.emplace_back( Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1) );
 
 	players.reserve(2);
 	players.emplace_back(Player(0));
@@ -44,42 +65,414 @@ Game::Game() : mt(0x15466666) {
 
 std::vector<MapObject> Game::create_map() {
 	std::vector<MapObject> objs;
-	std::vector<std::pair<float, float>> wall_positions = {
-		std::pair(100.f, 340.f),
-		std::pair(100.f, 440.f),
-		std::pair(100.f, 540.f),
-		std::pair(100.f, 640.f),
-		std::pair(50.f, 640.f),
-		std::pair(150.f, 640.f),
-		std::pair(200.f, 640.f),
+	struct wp {
+		wp(float x, float y, SPRITE s) {
+			this->x = x;
+			this->y = y;
+			this->s = s;
+		}
+		float x;
+		float y;
+		SPRITE s;
+	};
+	auto rw1 = SPRITE::CLOCK_1;
+	auto rw2 = SPRITE::CLOCK_2;
+	auto rw3 = SPRITE::CLOCK_3;
+	auto fctr = SPRITE::FENCE_CORNER_TR;
+	auto ffh = SPRITE::FENCE_FULL_H;
+	auto ffv = SPRITE::FENCE_FULL_V;
+	auto fcrb = SPRITE::FENCE_CORNER_RB;
+	auto fcbl = SPRITE::FENCE_CORNER_BL;
+	auto fclt = SPRITE::FENCE_CORNER_LT;
+	auto fsh = SPRITE::FENCE_SELF_H;
+	auto fsv = SPRITE::FENCE_SELF_V;
+	auto fht = SPRITE::FENCE_HALF_T;
+	auto fhr = SPRITE::FENCE_HALF_R;
+	auto fhb = SPRITE::FENCE_HALF_B;
+	auto fhl = SPRITE::FENCE_HALF_L;
+	auto ftt = SPRITE::FENCE_T_T;
+	// auto ftr = SPRITE::FENCE_T_R;
+	auto ftb = SPRITE::FENCE_T_B;
+	auto ftl = SPRITE::FENCE_T_L;
 
-		std::pair(-1000.f, 340.f),
-		std::pair(-1000.f, 440.f),
-		std::pair(-1000.f, 540.f),
-		std::pair(-1000.f, 640.f),
-		std::pair(-500.f, 640.f),
-		std::pair(-1500.f, 640.f),
-		std::pair(-2000.f, 640.f),
+	std::vector<wp> walls = {
+		// RED
+		// 2
+		wp(600.f, -200.f, rw1),
+		wp(400.f, -200.f, rw1),
+		wp(200.f, -200.f, rw2),
+		wp(0.f, -200.f, rw3),
 
-		std::pair(1000.f,- 340.f),
-		std::pair(1000.f,- 440.f),
-		std::pair(1000.f,- 540.f),
-		std::pair(1000.f,- 640.f),
-		std::pair(500.f, -640.f),
-		std::pair(1500.f,- 640.f),
-		std::pair(2000.f,- 640.f),
+		// 3
+		wp(800.f, 0.f, rw3),
 
-		std::pair(300.f,- 340.f),
-		std::pair(300.f,- 440.f),
-		std::pair(300.f,- 540.f),
-		std::pair(300.f,- 640.f),
-		std::pair(350.f, -640.f),
-		std::pair(450.f,- 640.f),
-		std::pair(500.f,- 640.f),
+		// 4
+		wp(600.f, 200.f, rw3),
+		wp(400.f, 200.f, rw1),
+		wp(200.f, 200.f, rw2),
+		wp(0.f, 200.f, rw3),
+
+		// 1
+		wp(600.f, -800.f, rw3),
+		wp(400.f, -800.f, rw1),
+		wp(200.f, -800.f, rw2),
+		wp(0.f, -800.f, rw3),
+
+		// 5
+		wp(600.f, 800.f, rw3),
+		wp(400.f, 800.f, rw1),
+		wp(200.f, 800.f, rw2),
+		wp(0.f, 800.f, rw3),
+
+		// 6
+		wp(800.f, 1000.f, rw3),
+		wp(800.f, 1200.f, rw1),
+
+		// 11
+		wp(800.f, -1000.f, rw3),
+		wp(800.f, -1200.f, rw1),
+		wp(800.f, -1400.f, rw2),
+		wp(800.f, -1600.f, rw3),
+
+		// 12
+		wp(1000.f, -1800.f, rw3),
+		wp(1200.f, -1800.f, rw3),
+		wp(1400.f, -1800.f, rw3),
+		wp(1600.f, -1800.f, rw3),
+		wp(1800.f, -1800.f, rw3),
+		wp(2000.f, -1800.f, rw3),
+		wp(2200.f, -1800.f, rw3),
+		wp(2400.f, -1800.f, rw3),
+		wp(2600.f, -1800.f, rw3),
+		wp(2800.f, -1800.f, rw3),
+		wp(3000.f, -1800.f, rw3),
+		wp(3200.f, -1800.f, rw3),
+		wp(3400.f, -1800.f, rw3),
+		wp(3600.f, -1800.f, rw3),
+		wp(3800.f, -1800.f, rw3),
+		wp(4000.f, -1800.f, rw3),
+		wp(4200.f, -1800.f, rw3),
+		wp(4400.f, -1800.f, rw3),
+		wp(4600.f, -1800.f, rw3),
+		wp(4800.f, -1800.f, rw3),
+		wp(5000.f, -1800.f, rw3),
+
+		// 13
+		wp(1000.f, 1400.f, rw3),
+		wp(1200.f, 1400.f, rw3),
+		wp(1400.f, 1400.f, rw3),
+		wp(1600.f, 1400.f, rw3),
+		wp(1800.f, 1400.f, rw3),
+		wp(2000.f, 1400.f, rw3),
+		wp(2200.f, 1400.f, rw3),
+		wp(2400.f, 1400.f, rw3),
+		wp(2600.f, 1400.f, rw3),
+		wp(2800.f, 1400.f, rw3),
+		wp(3000.f, 1400.f, rw3),
+		wp(3200.f, 1400.f, rw3),
+		wp(3400.f, 1400.f, rw3),
+		wp(3600.f, 1400.f, rw3),
+		wp(3800.f, 1400.f, rw3),
+		wp(4000.f, 1400.f, rw3),
+		wp(4200.f, 1400.f, rw3),
+		wp(4400.f, 1400.f, rw3),
+		wp(4600.f, 1400.f, rw3),
+		wp(4800.f, 1400.f, rw3),
+		wp(5000.f, 1400.f, rw3),
+
+		// 15
+		wp(2400.f, 1200.f, rw3),
+		wp(2400.f, 1000.f, rw3),
+		wp(2400.f, 800.f, rw3),
+		wp(2400.f, 600.f, rw3),
+
+		// 8
+		wp(1800.f, 1000.f, rw3),
+		wp(1800.f, 800.f, rw3),
+		wp(1800.f, 600.f, rw3),
+		wp(1800.f, 400.f, rw3),
+		wp(1800.f, 200.f, rw3),
+		wp(1800.f, 0.f, rw3),
+		wp(1800.f, -200.f, rw3),
+		wp(1800.f, -400.f, rw3),
+		wp(1800.f, -600.f, rw3),
+		wp(1800.f, -800.f, rw3),
+		wp(1800.f, -1000.f, rw3),
+
+		// 23
+		wp(2000.f, -1000.f, rw3),
+		wp(2200.f, -1000.f, rw3),
+		wp(2400.f, -1000.f, rw3),
+		wp(2600.f, -1000.f, rw3),
+		wp(2800.f, -1000.f, rw3),
+
+		// 20
+		wp(2400.f, -400.f, rw3),
+		wp(2400.f, -200.f, rw3),
+
+		// 25
+		wp(2400.f, -1600.f, rw3),
+		wp(2400.f, -1400.f, rw3),
+
+		// 17
+		wp(3000.f, 0.f, rw3),
+		wp(3000.f, 200.f, rw3),
+		wp(3000.f, 400.f, rw3),
+		wp(3000.f, 600.f, rw3),
+		wp(3000.f, 800.f, rw3),
+		wp(3000.f, 800.f, rw3),
+		wp(3000.f, 1000.f, rw3),
+
+		// 16
+		wp(3200.f, 1000.f, rw3),
+		wp(3400.f, 1000.f, rw3),
+		wp(3600.f, 1000.f, rw3),
+
+		// 18
+		wp(4000.f, 1200.f, rw3),
+		wp(4000.f, 1000.f, rw3),
+		wp(4000.f, 800.f, rw3),
+		wp(4000.f, 600.f, rw3),
+
+		// 19
+		wp(3800.f, 600.f, rw3),
+		wp(3600.f, 600.f, rw3),
+
+		// 21
+		wp(3600.f, 0.f, rw3),
+		wp(3600.f, -200.f, rw3),
+		wp(3600.f, -400.f, rw3),
+		wp(3600.f, -600.f, rw3),
+		wp(3600.f, -800.f, rw3),
+		wp(3600.f, -1000.f, rw3),
+
+		// 22
+		wp(3400.f, -600.f, rw3),
+
+		// 23
+		wp(4200.f, 400.f, rw3),
+		wp(4200.f, -100.f, rw3),
+		wp(4200.f, -600.f, rw3),
+		wp(4200.f, -1100.f, rw3),
+		wp(4800.f, 400.f, rw3),
+		wp(4800.f, -100.f, rw3),
+		wp(4800.f, -600.f, rw3),
+		wp(4800.f, -1100.f, rw3),
+
+		// 24
+		wp(5200.f, 1400.f, rw3),
+		wp(5200.f, 1200.f, rw3),
+		wp(5200.f, 1000.f, rw3),
+		wp(5200.f, 800.f, rw3),
+		wp(5200.f, 600.f, rw3),
+		wp(5200.f, 400.f, rw3),
+		wp(5200.f, 200.f, rw3),
+		wp(5200.f, 00.f, rw3),
+		wp(5200.f, -200.f, rw3),
+		wp(5200.f, -400.f, rw3),
+		wp(5200.f, -600.f, rw3),
+		wp(5200.f, -800.f, rw3),
+		wp(5200.f, -1000.f, rw3),
+		wp(5200.f, -1200.f, rw3),
+		wp(5200.f, -1400.f, rw3),
+		wp(5200.f, -1600.f, rw3),
+		wp(5200.f, -1800.f, rw3),
+
+		
+		// ---------------------------------------------------------------------
+		// BLUE
+		// 2
+		wp(-600.f, -200.f, fctr),
+		wp(-400.f, -200.f, ffh),
+		wp(-200.f, -200.f, fhl),
+
+		// 10
+		wp(-600.f, 0.f, ffv),
+
+		// 4
+		wp(-600.f, 200.f, fcrb),
+		wp(-400.f, 200.f, ffh),
+		wp(-200.f, 200.f, fhl),
+
+		// 1
+		wp(-600.f, -800.f, fcrb),
+		wp(-400.f, -800.f, ffh),
+		wp(-200.f, -800.f, fhl),
+
+		// 9
+		wp(-600.f, -1000.f, ffv),
+		wp(-600.f, -1200.f, ffv),
+		wp(-600.f, -1400.f, fclt),
+
+		// 5
+		wp(-600.f, 800.f, ffh),
+		wp(-400.f, 800.f, ffh),
+		wp(-200.f, 800.f, fhl),
+
+		// 11
+		wp(-800.f, 800.f, fctr),
+		wp(-800.f, 1000.f, ffv),
+		wp(-800.f, 1200.f, ffv),
+		wp(-800.f, 1400.f, fcbl),
+
+		// 6
+		wp(-1000.f, 1400.f, ffh),
+		wp(-1200.f, 1400.f, ffh),
+		wp(-1400.f, 1400.f, ftb),
+		wp(-1600.f, 1400.f, ffh),
+		wp(-1800.f, 1400.f, ffh),
+		wp(-2000.f, 1400.f, ffh),
+		wp(-2200.f, 1400.f, ffh),
+		wp(-2400.f, 1400.f, ffh),
+		wp(-2600.f, 1400.f, ffh),
+		wp(-2800.f, 1400.f, ffh),
+		wp(-3000.f, 1400.f, ftb),
+		wp(-3200.f, 1400.f, ffh),
+		wp(-3400.f, 1400.f, ffh),
+		wp(-3600.f, 1400.f, ffh),
+		wp(-3800.f, 1400.f, ffh),
+		wp(-4000.f, 1400.f, ffh),
+		wp(-4200.f, 1400.f, ffh),
+		wp(-4400.f, 1400.f, ffh),
+		wp(-4600.f, 1400.f, ffh),
+		wp(-4800.f, 1400.f, ffh),
+
+		// 8
+		wp(-800.f, -1400.f, ffh),
+		wp(-1000.f, -1400.f, ffh),
+		wp(-1200.f, -1400.f, ffh),
+		wp(-1400.f, -1400.f, ffh),
+		wp(-1600.f, -1400.f, ffh),
+		wp(-1800.f, -1400.f, ffh),
+		wp(-2000.f, -1400.f, ffh),
+		wp(-2200.f, -1400.f, ffh),
+		wp(-2400.f, -1400.f, ffh),
+		wp(-2600.f, -1400.f, ffh),
+		wp(-2800.f, -1400.f, ftt),
+		wp(-3000.f, -1400.f, ffh),
+		wp(-3200.f, -1400.f, ffh),
+		wp(-3400.f, -1400.f, ffh),
+		wp(-3600.f, -1400.f, ffh),
+		wp(-3800.f, -1400.f, ffh),
+		wp(-4000.f, -1400.f, ffh),
+		wp(-4200.f, -1400.f, ffh),
+		wp(-4400.f, -1400.f, ffh),
+		wp(-4600.f, -1400.f, ffh),
+		wp(-4800.f, -1400.f, ffh),
+		
+		// 12
+		wp(-1200.f, 600.f, fhb),
+		wp(-1200.f, 400.f, ffv),
+		wp(-1200.f, 200.f, fclt),
+
+		// 13
+		wp(-1400.f, 200.f, ffh),
+		wp(-1600.f, 200.f, fhr),
+
+		// 14
+		wp(-1200.f, -800.f, fclt),
+		wp(-1200.f, -600.f, ffv),
+		wp(-1200.f, -400.f, ffv),
+		wp(-1200.f, -200.f, fhb),
+
+
+		// 15
+		wp(-1400.f, -800.f, ffh),
+		wp(-1600.f, -800.f, ffh),
+		wp(-1800.f, -800.f, ffh),
+		wp(-2000.f, -800.f, ffh),
+		wp(-2200.f, -800.f, ffh),
+		wp(-2400.f, -800.f, fhr),
+
+		// 16
+		wp(-2000.f, -400.f, fhl),
+		wp(-2200.f, -400.f, ffh),
+		wp(-2400.f, -400.f, fctr),
+
+		// 17
+		wp(-2400.f, -200.f, ffv),
+		wp(-2400.f, 0.f, ftl),
+		wp(-2400.f, 200.f, ffv),
+		wp(-2400.f, 400.f, ffv),
+		wp(-2400.f, 600.f, ffv),
+		wp(-2400.f, 800.f, ffv),
+		wp(-2400.f, 1000.f, fcrb),
+		// 18
+		wp(-2200.f, 1000.f, ffh),
+		wp(-2000.f, 1000.f, ffh),
+		wp(-1800.f, 1000.f, fhl),
+
+		// 19
+		wp(-1600.f, -300.f, fsv),
+
+		// 3
+		wp(-1400.f, 1200.f, fht),
+
+		// 19.2
+		wp(-2600.f, 0.f, ffh),
+		wp(-2800.f, 0.f, ffh),
+		wp(-3000.f, 0.f, ffh),
+		wp(-3200.f, 0.f, fcrb),
+
+		// 20
+		wp(-3200.f, -200.f, ffv),
+		wp(-3200.f, -400.f, ffv),
+		wp(-3200.f, -600.f, ffv),
+		wp(-3200.f, -800.f, fht),
+
+		// 21
+		wp(-2800.f, -1200.f, ffv),
+		wp(-2800.f, -1000.f, fhb),
+
+		// 22.1
+		wp(-2800.f, -400.f, fsh),
+
+		// 22
+		wp(-3200.f, 400.f, fsh),
+
+		// 23
+		wp(-3000.f, 800.f, fht),
+		wp(-3000.f, 1000.f, ffv),
+		wp(-3000.f, 1200.f, ffv),
+
+		// 24
+		wp(-3600.f, 1000.f, fhl),
+		wp(-3800.f, 1000.f, ffh),
+		wp(-4000.f, 1000.f, ffh),
+
+		// 25
+		wp(-4200.f, 800.f, fht),
+		wp(-4200.f, 1000.f, fcrb),
+
+		// 26
+		wp(-4200.f, 400.f, fsh),
+		wp(-4200.f, -200.f, fsh),
+		wp(-4200.f, -800.f, fsh),
+		wp(-3700.f, 400.f, fsv),
+		wp(-3700.f, -200.f, fsv),
+		wp(-3700.f, -800.f, fsv),
+
+		// 7
+		wp(-5000.f, 1400.f, fcrb),
+		wp(-5000.f, 1200.f, ffv),
+		wp(-5000.f, 1000.f, ffv),
+		wp(-5000.f, 800.f, ffv),
+		wp(-5000.f, 600.f, ffv),
+		wp(-5000.f, 400.f, ffv),
+		wp(-5000.f, 200.f, ffv),
+		wp(-5000.f, 0.f, ffv),
+		wp(-5000.f, -200.f, ffv),
+		wp(-5000.f, -400.f, ffv),
+		wp(-5000.f, -600.f, ffv),
+		wp(-5000.f, -800.f, ffv),
+		wp(-5000.f, -1000.f, ffv),
+		wp(-5000.f, -1200.f, ffv),
+		wp(-5000.f, -1400.f, fctr),
+		
 
 	};
-	for (auto p : wall_positions) {
-		objs.emplace_back(MapObject(p.first, p.second, SPRITE::WALL_SPRITE));	
+	for (auto p : walls) {
+		objs.emplace_back(MapObject(p.x, p.y, p.s));	
 	}
 	return objs;
 }
@@ -115,7 +508,7 @@ void Player::try_shooting() {
 } 
 
 void Player::place_clone() {
-	Clone clone = Clone(mouse_x, mouse_y, SPRITE::CLONE_SPRITE, player_id); 
+	Clone clone = Clone(mouse_x, mouse_y, SPRITE::CLONE_SPRITE_BLUE, player_id); 
 	CommonData::get_instance()->clones.emplace_back(clone);	
 }
 
