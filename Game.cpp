@@ -144,6 +144,11 @@ void Game::update_place_clones(float elapsed) {
 		setup_find_clones();
 		return;
 	}
+
+	// Record character snapshot
+	for (Character &c : common_data->characters) {
+		c.phase1_replay_buffer.emplace_back(c.x, c.y, time_elapsed);
+	}
 }
 
 void Game::setup_find_clones() {

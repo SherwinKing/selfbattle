@@ -219,6 +219,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		draw_entity(clone);
 	}
 
+	for (Shadow shadow : common_data->shadows) {
+		draw_entity(shadow);
+	}
+
 	for (MapObject map_obj : common_data->map_objects) {
 		draw_entity(map_obj);
 	}
