@@ -37,8 +37,8 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	std::string port;
 	std::string host;
+	std::string port;
 	if (argc >= 3) {
 		host = argv[1];
 		port = argv[2];

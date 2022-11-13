@@ -16,6 +16,11 @@ PlayMode::PlayMode(Client &client_) : client(client_) {
 	text_renderer = TextRenderer("font/Roboto/Roboto-Regular.ttf");
 	if (single_player) {
 		std::cout << "Playing in Single Player Mode.\n";
+		player = &game.players[0];
+		character = &common_data->characters[0];
+		player_id = 0;
+		player->ready = true;
+		game.ready = true;
 	}
 	else {
 		std::cout << "Playing in Miltiplayer Mode.\n";
@@ -57,23 +62,47 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
 		return true;
 	}
+	if (evt.type == SDL_MOUSEMOTION) {
+		// only process this if after the game starts
+		if (game.ready) {
+			float center_x = static_cast<float>(window_size.x) / 2.f;
+			float center_y = static_cast<float>(window_size.y) / 2.f;
+			float rel_x = center_x - evt.button.x;
+			float rel_y = center_y - evt.button.y;
+			common_data->characters[player_id].rotation = atan2f(rel_x, rel_y);
+			//TODO: send message
+			return true;
+		}
+	}
 	if (evt.type == SDL_KEYDOWN) {
 		if (evt.key.keysym.sym == SDLK_a) {
-			player->left.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
-			return true;
+			if (player->left.state != Button::BTN_DOWN 
+			 && player->left.state != Button::BTN_IS_PRESSED) {
+				player->left.state = Button::BTN_DOWN;
+				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				return true;
+			}
 		} else if (evt.key.keysym.sym == SDLK_d) {
-			player->right.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
-			return true;
+			if (player->right.state != Button::BTN_DOWN 
+			 && player->right.state != Button::BTN_IS_PRESSED) {
+				player->right.state = Button::BTN_DOWN;
+				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				return true;
+			}
 		} else if (evt.key.keysym.sym == SDLK_w) {
-			player->up.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
-			return true;
+			if (player->up.state != Button::BTN_DOWN 
+			 && player->up.state != Button::BTN_IS_PRESSED) {
+				player->up.state = Button::BTN_DOWN;
+				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				return true;
+			}
 		} else if (evt.key.keysym.sym == SDLK_s) {
-			player->down.state = Button::BTN_DOWN;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
-			return true;
+			if (player->down.state != Button::BTN_DOWN 
+			 && player->down.state != Button::BTN_IS_PRESSED) {
+				player->down.state = Button::BTN_DOWN;
+				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				return true;
+			}
 		}
 	} 
 	else if (evt.type == SDL_KEYUP) {
@@ -101,11 +130,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 void PlayMode::update(float elapsed) {
 	if (single_player) {
-		player = &game.players[0];
-		character = &common_data->characters[0];
-		player_id = 0;
-		player->ready = true;
-		game.ready = true;
 		game.update(elapsed);
 		return;
 	}
@@ -173,8 +197,8 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 
 	float center_x = w / 2.f;
 	float center_y = h / 2.f;
-	world_x = character->x + (screen_x - center_x); 
-	world_y = character->y - (screen_y - center_y);
+	world_x = character->x + 2*(screen_x - center_x); 
+	world_y = character->y - 2*(screen_y - center_y);
 	// std::cout << "input: " << std::to_string(screen_x) << ", " << std::to_string(screen_y) << "\n";
 	// std::cout << "output: " << std::to_string(world_x) << ", " << std::to_string(world_y) << "\n";
 }
@@ -204,7 +228,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		float screen_x;
 		float screen_y;
 		world_to_opengl(entity.x, entity.y, drawable_size, screen_x, screen_y);
-		img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y);
+		img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y, entity.rotation);
 	};
 
 	for (Character c : common_data->characters) {

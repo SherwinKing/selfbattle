@@ -21,6 +21,7 @@ struct Entity {
 	BoundingBox box;
 	float x;
 	float y;
+	float rotation = 0; 
 	SPRITE sprite_index;
 	int8_t player_id = -1;
 	TAG tag;
@@ -53,7 +54,6 @@ struct CharacterSnapshot {
 };
 
 struct Character : Entity {
-	float rot = 0; 
     float hp = PLAYER_STARTING_HEALTH;
 	uint8_t player_id;
 	uint32_t score = 0;

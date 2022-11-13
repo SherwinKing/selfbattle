@@ -822,7 +822,6 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 		connection.send(character.x);
 		connection.send(character.y);
 		connection.send(character.sprite_index);
-		connection.send(character.rot);
 		connection.send(character.hp);
 	};
 
@@ -844,7 +843,7 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 			connection.send(connection_player->player_id);
 			break;
 		case MESSAGE::PLAYER_INPUT:
-			std::cout << "send player input\n";
+			// std::cout << "send player input\n";
 			send_player(*connection_player);
 			send_character(common_data->characters[connection_player->player_id]);
 			break;
@@ -897,7 +896,6 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 		read(&character->x);
 		read(&character->y);
 		read(&character->sprite_index);
-		read(&character->rot);
 		read(&character->hp);
 	};
 
@@ -920,7 +918,7 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			read(&client_player->player_id);
 			break;
 		case MESSAGE::PLAYER_INPUT:
-			std::cout << "read player_input\n";
+			// std::cout << "read player_input\n";
 			// TODO: adjust for network latency
 			read_player(client_player);
 			read_character(&common_data->characters[client_player->player_id]);
