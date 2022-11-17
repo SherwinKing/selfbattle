@@ -937,15 +937,18 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			read_character(&common_data->characters[client_player->player_id]);
 			if (is_server) {
 				message_queue.push_back(MessageInfo(MESSAGE::PLAYER_INPUT, client_player->player_id));
+				action_queue.push_back(MessageInfo(MESSAGE::PLAYER_INPUT, client_player->player_id));
 			}
-			// adjust character position for network latency
-			// std::chrono::time_point<std::chrono::system_clock> client_tp = client_player->time_updated;
-			// std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
-			// std::chrono::duration<float> f_latency = latency;
-			// std::cout << "latency is: " << f_latency.count() << "\n";
-			// TODO: remove double counting and add input prediction
-			// glm::vec2 displacement = client_player->get_direction() * f_latency.count() * PLAYER_SPEED;
-			// common_data->characters[client_player->player_id].move_character(displacement.x, displacement.y);
+			else {
+				// adjust character position for network latency for clients
+				// server will do this later (after it relays the message) to prevent double counting
+				std::chrono::time_point<std::chrono::system_clock> client_tp = client_player->time_updated;
+				std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
+				std::chrono::duration<float> f_latency = latency;
+				std::cout << "latency is: " << f_latency.count() << "\n";
+				glm::vec2 displacement = client_player->get_direction() * f_latency.count() * PLAYER_SPEED;
+				common_data->characters[client_player->player_id].move_character(displacement.x, displacement.y);
+			}
 			break;
 		}
 		case MESSAGE::PLAYER_READY:
@@ -983,4 +986,24 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
 
 	return message_type;
+}
+
+// process queued server actions after server relays its message
+void Game::process_action(Player *player, MESSAGE message_type) {
+	switch(message_type) {
+		case MESSAGE::PLAYER_UPDATE: {
+			// TODO: extract it to helper function
+			// adjust character position for network latency
+			std::chrono::time_point<std::chrono::system_clock> client_tp = player->time_updated;
+			std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
+			std::chrono::duration<float> f_latency = latency;
+			std::cout << "latency is: " << f_latency.count() << "\n";
+			glm::vec2 displacement = player->get_direction() * f_latency.count() * PLAYER_SPEED;
+			common_data->characters[player->player_id].move_character(displacement.x, displacement.y);
+			break;
+		}
+		default:
+			std::cout << "No matching tag " << std::to_string((uint8_t)message_type) << ", probably an error here\n";
+			break;
+	}
 }

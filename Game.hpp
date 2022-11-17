@@ -103,6 +103,7 @@ struct MessageInfo {
 struct Game {
 	std::vector<Player> players;
 	std::deque<MessageInfo> message_queue;
+	std::deque<MessageInfo> action_queue;
 
 	Player *spawn_player(); //add player the end of the players list (may also, e.g., play some spawn anim)
 	void remove_player(Player *); //remove player from game (may also, e.g., play some despawn anim)
@@ -141,4 +142,5 @@ struct Game {
 	//---- communication helpers ----
 	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;
 	MESSAGE recv_message(Connection *connection_, Player *client_player, bool is_server);
+	void process_action(Player *player, MESSAGE message_type);
 };

@@ -131,6 +131,13 @@ int main(int argc, char **argv) {
 			game.message_queue.pop_front();
 		}
 
+		// complete updates related to the messages (like input sync)
+		while (game.message_queue.size() != 0) {
+			MessageInfo message = game.message_queue.front();
+			game.process_action(&game.players[message.player_id], message.tag);
+			game.message_queue.pop_front();
+		}
+
 		//update current game state
 		game.update(Game::Tick);
 
