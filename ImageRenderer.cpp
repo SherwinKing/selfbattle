@@ -125,11 +125,11 @@ void ImageRenderer::render_image(const ImageData & image_data, float x, float y,
 
 	// Rotate the image to render
 	if (rotation_radians != 0) {
-		glm::mat4 center_rotation_mat = glm::translate(glm::mat4(1.0f), glm::vec3(-center));
+		glm::mat4 center_rotation_mat = glm::translate(glm::mat4(1.0f), glm::vec3(center));
 		center_rotation_mat = glm::scale(center_rotation_mat, glm::vec3(sx, sy, 1.0f));
 		center_rotation_mat = glm::rotate(center_rotation_mat, rotation_radians, glm::vec3(0.0, 0.0, 1.0));
 		center_rotation_mat = glm::scale(center_rotation_mat, glm::vec3(1.0f/sx, 1.0f/sy, 1.0f));
-		center_rotation_mat = glm::translate(center_rotation_mat, glm::vec3(center));
+		center_rotation_mat = glm::translate(center_rotation_mat, glm::vec3(-center));
 
 		bottom_left = center_rotation_mat * bottom_left;
 		bottom_right = center_rotation_mat * bottom_right;
