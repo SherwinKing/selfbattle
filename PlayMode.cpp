@@ -172,14 +172,14 @@ void PlayMode::update(float elapsed) {
 						case MESSAGE::SERVER_READY:
 							// all computations are already done in game
 							break;
+						case MESSAGE::PLAYER_UPDATE:
+							// computations done in game
+							break;
 						default:
 							handled_message = false;
 							break;
 					}
 				} while (handled_message);
-
-				// send player's rotation
-				// game.send_message(&client.connection, player, MESSAGE::PLAYER_UPDATE);
 			} catch (std::exception const &e) {
 				std::cerr << "[" << c->socket << "] malformed message from server: " << e.what() << std::endl;
 				//quit the game:
@@ -191,7 +191,9 @@ void PlayMode::update(float elapsed) {
 	if (!game.ready) {
 		return;
 	}
-
+	
+	// send player's rotation
+	game.send_message(&client.connection, player, MESSAGE::PLAYER_UPDATE);
 	game.update(elapsed);
 }
 

@@ -863,7 +863,8 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 			// sending out the message type as signal
 			break;
 		case MESSAGE::PLAYER_UPDATE:
-			// connection.send(common_data->characters[connection_player->player_id].rotation);
+			connection.send(connection_player->player_id);
+			connection.send(common_data->characters[connection_player->player_id].rotation);
 			break;
 		default:
 			std::cout << "this should not happen\n";
@@ -942,6 +943,7 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			// std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
 			// std::chrono::duration<float> f_latency = latency;
 			// std::cout << "latency is: " << f_latency.count() << "\n";
+			// TODO: remove double counting and add input prediction
 			// glm::vec2 displacement = client_player->get_direction() * f_latency.count() * PLAYER_SPEED;
 			// common_data->characters[client_player->player_id].move_character(displacement.x, displacement.y);
 			break;
@@ -964,7 +966,11 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			ready = true;
 			break;
 		case MESSAGE::PLAYER_UPDATE:
-			// read(&common_data->characters[client_player->player_id].rotation);
+			read(&client_player->player_id);
+			read(&common_data->characters[client_player->player_id].rotation);
+			if (is_server) {
+				message_queue.push_back(MessageInfo(MESSAGE::PLAYER_UPDATE, client_player->player_id));
+			}
 			break;
 		default:
 			// TODO: raise an error here if we know this shouldn't happen
