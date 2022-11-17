@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 #define SPRITE_DATA std::vector< glm::u8vec4 >
 
@@ -36,6 +37,7 @@ enum class MESSAGE : uint8_t {
 	PLAYER_INPUT = '2',
 	PLAYER_READY = '3',
 	SERVER_READY = '4',
+	PLAYER_UPDATE = '5',
 };
 
 enum GameState : uint8_t {
@@ -71,12 +73,15 @@ struct Player {
 	float mouse_y;
 	float shoot_interval = 0;
 	bool ready = false;
+	// time where player input was last updated
+	std::chrono::time_point<std::chrono::system_clock> time_updated;
 
 	void update(float elapsed);
 	void set_position(float new_x, float new_y);
 	void place_clone();
 	void try_shooting (); 
 	void read_player_data(const Player &other_player);
+	glm::vec2 get_direction();
 };
 
 struct MessageInfo {

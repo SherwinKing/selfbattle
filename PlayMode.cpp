@@ -10,6 +10,7 @@
 
 #include <random>
 #include <array>
+#include <chrono>
 
 PlayMode::PlayMode(Client &client_) : client(client_) {
 	common_data = CommonData::get_instance();
@@ -31,10 +32,20 @@ PlayMode::~PlayMode() {
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
+
+	// this function assumes that we are sending a full message
+	// which includes all player inputs, player position, and system time
+	auto send_message_to_server = [&] (MESSAGE message) {
+		// change this assert if needed
+		assert(message == MESSAGE::PLAYER_READY || message == MESSAGE::PLAYER_INPUT);
+		player->time_updated = std::chrono::system_clock::now();
+		game.send_message(&client.connection, player, message);
+	};
+
 	if (player == nullptr || !player->ready) {
 		if (evt.type == SDL_KEYDOWN || evt.type == SDL_MOUSEBUTTONDOWN) {
 			player->ready = true;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_READY);
+			send_message_to_server(MESSAGE::PLAYER_READY);
 			return true;
 		}
 	}
@@ -54,12 +65,12 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		float screen_x = (float)evt.button.x;
 		float screen_y = (float)evt.button.y;
 		screen_to_world(screen_x, screen_y, window_size, player->mouse_x, player->mouse_y);
-		game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+		send_message_to_server(MESSAGE::PLAYER_INPUT);
 		return true;
 	}
 	if (evt.type == SDL_MOUSEBUTTONUP) {
 		player->mouse.state = Button::BTN_RELEASE;
-		game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+		send_message_to_server(MESSAGE::PLAYER_INPUT);
 		return true;
 	}
 	if (evt.type == SDL_MOUSEMOTION) {
@@ -70,7 +81,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			float rel_x = center_x - evt.button.x;
 			float rel_y = center_y - evt.button.y;
 			common_data->characters[player_id].rotation = atan2f(rel_x, rel_y);
-			//TODO: send message
 			return true;
 		}
 	}
@@ -79,28 +89,28 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			if (player->left.state != Button::BTN_DOWN 
 			 && player->left.state != Button::BTN_IS_PRESSED) {
 				player->left.state = Button::BTN_DOWN;
-				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				send_message_to_server(MESSAGE::PLAYER_INPUT);
 				return true;
 			}
 		} else if (evt.key.keysym.sym == SDLK_d) {
 			if (player->right.state != Button::BTN_DOWN 
 			 && player->right.state != Button::BTN_IS_PRESSED) {
 				player->right.state = Button::BTN_DOWN;
-				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				send_message_to_server(MESSAGE::PLAYER_INPUT);
 				return true;
 			}
 		} else if (evt.key.keysym.sym == SDLK_w) {
 			if (player->up.state != Button::BTN_DOWN 
 			 && player->up.state != Button::BTN_IS_PRESSED) {
 				player->up.state = Button::BTN_DOWN;
-				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				send_message_to_server(MESSAGE::PLAYER_INPUT);
 				return true;
 			}
 		} else if (evt.key.keysym.sym == SDLK_s) {
 			if (player->down.state != Button::BTN_DOWN 
 			 && player->down.state != Button::BTN_IS_PRESSED) {
 				player->down.state = Button::BTN_DOWN;
-				game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+				send_message_to_server(MESSAGE::PLAYER_INPUT);
 				return true;
 			}
 		}
@@ -108,19 +118,19 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	else if (evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
 			player->left.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+			send_message_to_server(MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
 			player->right.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+			send_message_to_server(MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_w) {
 			player->up.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+			send_message_to_server(MESSAGE::PLAYER_INPUT);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
 			player->down.state = Button::BTN_RELEASE;
-			game.send_message(&client.connection, player, MESSAGE::PLAYER_INPUT);
+			send_message_to_server(MESSAGE::PLAYER_INPUT);
 			return true;
 		}
 	}
@@ -167,6 +177,9 @@ void PlayMode::update(float elapsed) {
 							break;
 					}
 				} while (handled_message);
+
+				// send player's rotation
+				// game.send_message(&client.connection, player, MESSAGE::PLAYER_UPDATE);
 			} catch (std::exception const &e) {
 				std::cerr << "[" << c->socket << "] malformed message from server: " << e.what() << std::endl;
 				//quit the game:
@@ -283,6 +296,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 		return text;
 	};
+
+	std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
+	text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
 	
 	std::string time_text = float_to_string(game.time_remaining);
 	text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
