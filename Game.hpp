@@ -5,6 +5,7 @@
 #include "load_save_png.hpp"
 #include "Entity.hpp"
 #include "CommonData.hpp"
+#include "Map.hpp"
 
 #include <glm/glm.hpp>
 
