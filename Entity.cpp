@@ -1,4 +1,5 @@
 #include "Entity.hpp"
+#include "CommonData.hpp"
 
 void Entity::move(float dx, float dy) {
 	x += dx;	
