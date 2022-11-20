@@ -24,7 +24,9 @@ void Character::move_character(float dx, float dy) {
 	move(dx, dy);
 
 	CommonData *common_data = CommonData::get_instance();
-	for (auto mapobj : common_data->map_objects)
+	
+	int section_id = common_data->map.get_section_id(x, y);
+	for (auto mapobj : common_data->map.sections[section_id])
 	{
 		if (collide(mapobj)) {
 			move(-dx, -dy);

@@ -134,6 +134,10 @@ struct Game {
 	void setup_find_clones();
 	void setup_kill_clones();
 
+	int get_section_index(float x, float y);
+	bool is_in_section(int section_index, float x, float y);
+
+
 	//---- communication helpers ----
 	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;
 	MESSAGE recv_message(Connection *connection_, Player *client_player, bool is_server);

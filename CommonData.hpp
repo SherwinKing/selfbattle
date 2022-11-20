@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <vector>
 
+#include "Map.hpp"
 
-struct MapObject;
 struct Bullet;
 struct Clone;
 struct ImageData;
@@ -14,7 +14,8 @@ typedef Clone Shadow;
 // It is a singleton for now, might be changed in the future
 // https://refactoring.guru/design-patterns/singleton/cpp/example
 struct CommonData {
-    std::vector<MapObject> map_objects;
+    Map map;
+    
     std::vector<Bullet> bullets;
 	std::vector<Clone> clones;
     std::vector<ImageData> sprites;
