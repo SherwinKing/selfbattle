@@ -169,6 +169,7 @@ const common_names = [
 	maek.CPP('ImageRenderer.cpp'),
 	maek.CPP('TextRenderer.cpp'),
 	maek.CPP('Entity.cpp'),
+	maek.CPP('Animation.cpp')
 ];
 
 const show_meshes_names = [

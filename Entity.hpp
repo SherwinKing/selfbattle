@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Animation.hpp"
 #include "CommonData.hpp"
 #include "ImageRenderer.hpp"
 #include <deque>
@@ -18,6 +19,7 @@ struct BoundingBox {
 };
 
 struct Entity {
+	Animation anim;
 	BoundingBox box;
 	float x;
 	float y;
