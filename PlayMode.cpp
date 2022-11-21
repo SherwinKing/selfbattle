@@ -204,26 +204,32 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		float screen_x;
 		float screen_y;
 		world_to_opengl(entity.x, entity.y, drawable_size, screen_x, screen_y);
-		img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y);
+		if (entity.anim.playing) {
+			assert(entity.anim.initialized);
+			img_renderer.render_image(common_data->sprites[entity.anim.animation[entity.anim.sprite_index]], screen_x, screen_y);
+		}
+		else {
+			img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y);
+		}
 	};
 
-	for (Character c : common_data->characters) {
+	for (Character& c : common_data->characters) {
 		draw_entity(c);
 	}
 
-	for (Bullet bullet : common_data->bullets) {
+	for (Bullet& bullet : common_data->bullets) {
 		draw_entity(bullet);
 	}
 
-	for (Clone clone : common_data->clones) {
+	for (Clone& clone : common_data->clones) {
 		draw_entity(clone);
 	}
 
-	for (Shadow shadow : common_data->shadows) {
+	for (Shadow& shadow : common_data->shadows) {
 		draw_entity(shadow);
 	}
 
-	for (MapObject map_obj : common_data->map_objects) {
+	for (MapObject& map_obj : common_data->map_objects) {
 		draw_entity(map_obj);
 	}
 

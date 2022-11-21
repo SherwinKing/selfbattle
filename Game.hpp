@@ -136,4 +136,7 @@ struct Game {
 	//---- communication helpers ----
 	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;
 	MESSAGE recv_message(Connection *connection_, Player *client_player, bool is_server);
+
+	private:
+		void update_animations(float elapsed);
 };

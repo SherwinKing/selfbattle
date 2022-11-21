@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Animation.hpp"
 #include "CommonData.hpp"
 #include "ImageRenderer.hpp"
 #include <deque>
@@ -16,6 +15,28 @@ struct BoundingBox {
     BoundingBox() = default;
     float width = 0;
 	float height = 0;
+};
+
+struct Animation {
+    Animation() {
+        playing = false; 
+    }
+	void init(const std::vector<SPRITE>& s, float speed, bool start_playing, bool looping) {
+		animation = s;
+		animation_speed = speed;
+		initialized = true;
+		playing = start_playing;
+		loop = looping;
+	}
+    std::vector<SPRITE> animation;
+    uint8_t sprite_index = 0;
+    float elapsed = 0.f;
+    float animation_speed = 0.f;
+    bool playing = false;
+	bool initialized = false;
+	bool loop;
+
+    void update(float elapsed);
 };
 
 struct Entity {
@@ -110,3 +131,4 @@ struct Bullet : Entity {
 
 	void move_bullet(float elapsed);
 };
+

@@ -95,7 +95,7 @@ std::vector<MapObject> Game::create_map() {
 	auto ftb = SPRITE::FENCE_T_B;
 	auto ftl = SPRITE::FENCE_T_L;
 
-	std::vector<wp> walls = {
+	std::vector<wp> red_walls = {
 		// RED
 		// 2
 		wp(600.f, -200.f, rw1),
@@ -277,9 +277,10 @@ std::vector<MapObject> Game::create_map() {
 		wp(5200.f, -1400.f, rw3),
 		wp(5200.f, -1600.f, rw3),
 		wp(5200.f, -1800.f, rw3),
-
+	};
 		
 		// ---------------------------------------------------------------------
+	std::vector<wp> blue_walls = {
 		// BLUE
 		// 2
 		wp(-600.f, -200.f, fctr),
@@ -468,10 +469,17 @@ std::vector<MapObject> Game::create_map() {
 		wp(-5000.f, -1000.f, ffv),
 		wp(-5000.f, -1200.f, ffv),
 		wp(-5000.f, -1400.f, fctr),
-		
 
 	};
-	for (auto p : walls) {
+
+	// Animations (Probably somewhere better to put this and organize this code, just putting it here for now)	
+	std::vector<SPRITE> clock_animation = {rw1, rw2, rw3};
+	for (auto p : red_walls) {
+		MapObject m(p.x, p.y, p.s); 
+		m.anim.init(clock_animation, CLOCK_ANIMATION_SPEED, true, true);
+		objs.emplace_back(std::move(m));	
+	}
+	for (auto p : blue_walls) {
 		objs.emplace_back(MapObject(p.x, p.y, p.s));	
 	}
 	return objs;
@@ -803,6 +811,17 @@ void Game::update(float elapsed) {
 			break;
 		default:
 			break;
+	}
+	update_animations(elapsed);
+}
+
+void Game::update_animations(float elapsed) {
+	// Only do it for the things that need to be updated?
+	for (MapObject& map_obj : common_data->map_objects) {
+		map_obj.anim.update(elapsed);
+	}	
+	for (Character& c : common_data->characters) {
+		c.anim.update(elapsed);
 	}
 }
 
