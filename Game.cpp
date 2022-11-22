@@ -66,7 +66,8 @@ Game::Game() : mt(0x15466666) {
 		common_data->sprites.emplace_back(s);
 	}
 
-	common_data->map_objects = create_map();
+	common_data->map = Map(create_map());
+
 	common_data->characters.reserve(2);
 	Character c1(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
 	Character c2(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1);
@@ -747,7 +748,9 @@ void Game::update_kill_clones(float elapsed) {
 				bullet.active = false;
 			}
 		}
-		for (MapObject &map_obj : common_data->map_objects) {
+
+		int bullet_section_id = common_data->map.get_section_id(bullet.x, bullet.y);
+		for (MapObject &map_obj : common_data->map.sections[bullet_section_id]) {
 			if (bullet.collide(map_obj)) {
 				bullet.active = false;
 			}
@@ -852,7 +855,7 @@ void Game::update(float elapsed) {
 
 void Game::update_animations(float elapsed) {
 	// Only do it for the things that need to be updated?
-	for (MapObject& map_obj : common_data->map_objects) {
+	for (MapObject& map_obj : common_data->map.map_objects) {
 		map_obj.anim.update(elapsed);
 	}	
 	for (Character& c : common_data->characters) {

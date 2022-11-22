@@ -1,8 +1,9 @@
 #pragma once
 
-#include "CommonData.hpp"
+
 #include "ImageRenderer.hpp"
 #include <deque>
+#include "Constant.hpp"
 
 enum TAG : uint8_t {
 	MAP_TAG = 0,
@@ -51,16 +52,6 @@ struct Entity {
 	void move(float dx, float dy);
 	// ImageData get_sprite();
 	bool collide(Entity& other);
-};
-
-struct MapObject : Entity {
-	MapObject() = default;	
-	MapObject(float start_x, float start_y, SPRITE sprite_index) {
-		x = start_x;
-		y = start_y;
-		this->sprite_index = sprite_index;
-		tag = TAG::MAP_TAG;
-	}
 };
 
 struct CharacterSnapshot {
