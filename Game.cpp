@@ -1001,8 +1001,7 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 				// server will do this later (after it relays the message) to prevent double counting
 				std::chrono::time_point<std::chrono::system_clock> client_tp = client_player->time_updated;
 				std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
-				std::chrono::duration<float> f_latency = latency;
-				std::cout << "latency is: " << f_latency.count() << "\n";
+				f_latency = latency;
 				glm::vec2 displacement = client_player->get_direction() * f_latency.count() * PLAYER_SPEED;
 				common_data->characters[client_player->player_id].move_character(displacement.x, displacement.y);
 			}
@@ -1053,8 +1052,7 @@ void Game::process_action(Player *player, MESSAGE message_type) {
 			// adjust character position for network latency
 			std::chrono::time_point<std::chrono::system_clock> client_tp = player->time_updated;
 			std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
-			std::chrono::duration<float> f_latency = latency;
-			std::cout << "latency is: " << f_latency.count() << "\n";
+			f_latency = latency;
 			glm::vec2 displacement = player->get_direction() * f_latency.count() * PLAYER_SPEED;
 			common_data->characters[player->player_id].move_character(displacement.x, displacement.y);
 			break;

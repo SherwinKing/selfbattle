@@ -305,8 +305,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		return text;
 	};
 
-	std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
-	text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
+	std::string ping_text = "ping: " + float_to_string(game.f_latency.count() * 1000.f) + "ms";
+	text_renderer.render_text(ping_text, 0.5f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
 	
 	std::string time_text = float_to_string(game.time_remaining);
 	text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);

@@ -127,8 +127,9 @@ struct Game {
 	inline static constexpr float Tick = 1.0f / 30.0f;
 
 	float time_remaining = PLACE_CLONE_PHASE_DURATION;
-	// TODO: optimize
-	float time_elapsed = 0;	// Should be PLACE_CLONE_PHASE_DURATION - time_remaining. Fix later
+	float time_elapsed = 0;
+
+	std::chrono::duration<float> f_latency;
 	
 	std::vector<MapObject> create_map();
 
