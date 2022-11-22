@@ -41,6 +41,19 @@ Game::Game() : mt(0x15466666) {
 		std::pair(SPRITE::CLOCK_1, "sprites/clock_1.png"),
 		std::pair(SPRITE::CLOCK_2, "sprites/clock_2.png"),
 		std::pair(SPRITE::CLOCK_3, "sprites/clock_3.png"),
+		std::pair(SPRITE::CLOCK_4, "sprites/clock_4.png"),
+		std::pair(SPRITE::CLOCK_5, "sprites/clock_5.png"),
+		std::pair(SPRITE::CLOCK_6, "sprites/clock_6.png"),
+		std::pair(SPRITE::CLOCK_7, "sprites/clock_7.png"),
+		std::pair(SPRITE::CLOCK_8, "sprites/clock_8.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_1, "sprites/player_sprite_reload_red_1.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_2, "sprites/player_sprite_reload_red_2.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_3, "sprites/player_sprite_reload_red_3.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_4, "sprites/player_sprite_reload_red_4.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_1, "sprites/player_sprite_reload_blue_1.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2, "sprites/player_sprite_reload_blue_2.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3, "sprites/player_sprite_reload_blue_3.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4, "sprites/player_sprite_reload_blue_4.png"),
 	};
 	
 	common_data = CommonData::get_instance();
@@ -55,8 +68,22 @@ Game::Game() : mt(0x15466666) {
 
 	common_data->map_objects = create_map();
 	common_data->characters.reserve(2);
-	common_data->characters.emplace_back( Character(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0) );
-	common_data->characters.emplace_back( Character(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1) );
+	Character c1(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
+	Character c2(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1);
+	auto rl1 = SPRITE::PLAYER_SPRITE_RELOAD_RED_1;
+	auto rl2 = SPRITE::PLAYER_SPRITE_RELOAD_RED_2;
+	auto rl3 = SPRITE::PLAYER_SPRITE_RELOAD_RED_3;
+	auto rl4 = SPRITE::PLAYER_SPRITE_RELOAD_RED_4;
+	auto bl1 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_1;
+	auto bl2 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2;
+	auto bl3 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3;
+	auto bl4 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4;
+	std::vector<SPRITE> red_shooting_animation = {rl1, rl2, rl3, rl4};
+	std::vector<SPRITE> blue_shooting_animation = {bl1, bl2, bl3, bl4};
+	c1.anim.init(red_shooting_animation, PLAYER_SHOOTING_ANIMATION_SPEED, false, false);
+	c2.anim.init(blue_shooting_animation, PLAYER_SHOOTING_ANIMATION_SPEED, false, false);
+	common_data->characters.emplace_back(std::move(c1));
+	common_data->characters.emplace_back(std::move(c2));
 
 	players.reserve(2);
 	players.emplace_back(Player(0));
@@ -78,6 +105,11 @@ std::vector<MapObject> Game::create_map() {
 	auto rw1 = SPRITE::CLOCK_1;
 	auto rw2 = SPRITE::CLOCK_2;
 	auto rw3 = SPRITE::CLOCK_3;
+	auto rw4 = SPRITE::CLOCK_4;
+	auto rw5 = SPRITE::CLOCK_5;
+	auto rw6 = SPRITE::CLOCK_6;
+	auto rw7 = SPRITE::CLOCK_7;
+	auto rw8 = SPRITE::CLOCK_8;
 	auto fctr = SPRITE::FENCE_CORNER_TR;
 	auto ffh = SPRITE::FENCE_FULL_H;
 	auto ffv = SPRITE::FENCE_FULL_V;
@@ -473,7 +505,7 @@ std::vector<MapObject> Game::create_map() {
 	};
 
 	// Animations (Probably somewhere better to put this and organize this code, just putting it here for now)	
-	std::vector<SPRITE> clock_animation = {rw1, rw2, rw3};
+	std::vector<SPRITE> clock_animation = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
 	for (auto p : red_walls) {
 		MapObject m(p.x, p.y, p.s); 
 		m.anim.init(clock_animation, CLOCK_ANIMATION_SPEED, true, true);
@@ -503,7 +535,10 @@ void Player::try_shooting() {
 	shoot_interval = BULLET_INTERVAL;
 
 	CommonData *common_data = CommonData::get_instance();
-	Character c = common_data->characters[player_id];
+	Character& c = common_data->characters[player_id];
+
+	// Being playing shooting animation
+	c.anim.playing = true;
 
 	glm::vec2 shoot_velo;
 	shoot_velo.x = mouse_x - c.x;

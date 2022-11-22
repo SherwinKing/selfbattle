@@ -11,10 +11,8 @@ void Animation::update(float time_elapsed) {
         this->elapsed = 0.f; 
 		this->sprite_index += 1;
         if (this->sprite_index == this->animation.size()) {
-			if (this->loop) {
-				this->sprite_index = 0;
-			}
-			else {
+			this->sprite_index = 0;
+			if (!this->loop) {
 				this->playing = false; 
 			}
         }

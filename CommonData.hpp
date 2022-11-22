@@ -19,9 +19,12 @@ constexpr float BULLET_INTERVAL = 0.8f;
 constexpr float PLAYER_SIZE = 71.f;
 
 constexpr float CLOCK_ANIMATION_SPEED = 0.15f;
+constexpr float PLAYER_SHOOTING_ANIMATION_SPEED = 0.15f;
 
-constexpr float PLACE_CLONE_PHASE_DURATION = 40.f;
-constexpr float FIND_CLONE_PHASE_DURATION = 30.f;
+// constexpr float PLACE_CLONE_PHASE_DURATION = 40.f;
+// constexpr float FIND_CLONE_PHASE_DURATION = 30.f;
+constexpr float PLACE_CLONE_PHASE_DURATION = 4.f;
+constexpr float FIND_CLONE_PHASE_DURATION = 3.f;
 constexpr float KILL_CLONE_PHASE_DURATION = 50.f;
 
 
@@ -53,7 +56,20 @@ enum SPRITE : uint8_t {
     FENCE_CORNER_LT,
     CLOCK_1,
     CLOCK_2,
-    CLOCK_3 
+    CLOCK_3,
+    CLOCK_4,
+    CLOCK_5,
+    CLOCK_6,
+    CLOCK_7,
+    CLOCK_8,
+    PLAYER_SPRITE_RELOAD_RED_1,
+    PLAYER_SPRITE_RELOAD_RED_2,
+    PLAYER_SPRITE_RELOAD_RED_3,
+    PLAYER_SPRITE_RELOAD_RED_4,
+    PLAYER_SPRITE_RELOAD_BLUE_1,
+    PLAYER_SPRITE_RELOAD_BLUE_2,
+    PLAYER_SPRITE_RELOAD_BLUE_3,
+    PLAYER_SPRITE_RELOAD_BLUE_4,
 };
 
 struct MapObject;
