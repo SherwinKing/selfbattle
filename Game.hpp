@@ -5,6 +5,7 @@
 #include "load_save_png.hpp"
 #include "Entity.hpp"
 #include "CommonData.hpp"
+#include "Map.hpp"
 
 #include <glm/glm.hpp>
 
@@ -138,6 +139,10 @@ struct Game {
 	void setup_place_clones();
 	void setup_find_clones();
 	void setup_kill_clones();
+
+	int get_section_index(float x, float y);
+	bool is_in_section(int section_index, float x, float y);
+
 
 	//---- communication helpers ----
 	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;

@@ -262,7 +262,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		draw_entity(shadow);
 	}
 
-	for (MapObject map_obj : common_data->map_objects) {
+	for (MapObject map_obj : common_data->map.map_objects) {
 		draw_entity(map_obj);
 	}
 
