@@ -32,19 +32,30 @@ int main(int argc, char **argv) {
 
 	//------------ argument parsing ------------
 
-	if (argc != 2) {
-		std::cerr << "Usage:\n\t./server <port>" << std::endl;
+	if (argc < 2) {
+		std::cerr << "Usage:\n\t./server [<host>] <port>" << std::endl;
 		return 1;
+	}
+
+	std::string host;
+	std::string port;
+	if (argc >= 3) {
+		host = argv[1];
+		port = argv[2];
+	} else {
+		host = "127.0.0.1";
+		port = argv[1];
 	}
 
 	//------------ initialization ------------
 
-	Server server(argv[1]);
+	Server server(host, port);
 
 	//------------ main loop ------------
 
 	//keep track of which connection is controlling which player:
 	std::unordered_map< Connection *, Player * > connection_to_player;
+	std::unordered_map< int8_t, Connection * > player_to_connection;
 	//keep track of game state:
 	Game game;
 
@@ -61,8 +72,11 @@ int main(int argc, char **argv) {
 
 			//helper used on client close (due to quit) and server close (due to error):
 			auto remove_connection = [&](Connection *c) {
+				// TODO: fix this
 				auto f = connection_to_player.find(c);
 				assert(f != connection_to_player.end());
+				Player *player = connection_to_player[c];
+				player_to_connection.erase(player->player_id);
 				game.remove_player(f->second);
 				connection_to_player.erase(f);
 			};
@@ -72,7 +86,11 @@ int main(int argc, char **argv) {
 					//client connected:
 
 					//create some player info for them:
-					connection_to_player.emplace(c, game.spawn_player());
+					Player *new_player = game.spawn_player();
+					connection_to_player.emplace(c, new_player);
+					player_to_connection.emplace(new_player->player_id, c);
+
+					game.send_message(c, new_player, MESSAGE::SERVER_INIT);
 
 				} else if (evt == Connection::OnClose) {
 					//client disconnected:
@@ -82,7 +100,6 @@ int main(int argc, char **argv) {
 				} else { assert(evt == Connection::OnRecv);
 					//got data from client:
 					//std::cout << "current buffer:\n" << hex_dump(c->recv_buffer); std::cout.flush(); //DEBUG
-
 					//look up in players list:
 					auto f = connection_to_player.find(c);
 					assert(f != connection_to_player.end());
@@ -93,7 +110,7 @@ int main(int argc, char **argv) {
 						bool handled_message;
 						do {
 							handled_message = false;
-							if (player.controls.recv_controls_message(c)) handled_message = true;
+							if (game.recv_message(c, &player, true) != MESSAGE::MSG_NONE) handled_message = true;
 							//TODO: extend for more message types as needed
 						} while (handled_message);
 					} catch (std::exception const &e) {
@@ -105,14 +122,29 @@ int main(int argc, char **argv) {
 			}, remain);
 		}
 
+		// send messages in queue
+		while (game.message_queue.size() != 0) {
+			MessageInfo message = game.message_queue.front();
+			// send it to the other player
+			Connection *c = player_to_connection[!message.player_id];
+			game.send_message(c, &game.players[message.player_id], message.tag);
+			game.message_queue.pop_front();
+		}
+
+		// complete updates related to the messages (like input sync)
+		while (game.message_queue.size() != 0) {
+			MessageInfo message = game.message_queue.front();
+			game.process_action(&game.players[message.player_id], message.tag);
+			game.message_queue.pop_front();
+		}
+
 		//update current game state
 		game.update(Game::Tick);
 
 		//send updated game state to all clients
-		for (auto &[c, player] : connection_to_player) {
-			game.send_state_message(c, player);
-		}
-
+		// for (auto &[c, player] : connection_to_player) {
+		// 	game.send_message(c, player);
+		// }
 	}
 
 

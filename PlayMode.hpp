@@ -1,7 +1,11 @@
+#pragma once
+
 #include "Mode.hpp"
 
 #include "Connection.hpp"
 #include "Game.hpp"
+#include "ImageRenderer.hpp"
+#include "TextRenderer.hpp"
 
 #include <glm/glm.hpp>
 
@@ -17,10 +21,18 @@ struct PlayMode : Mode {
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
-	//----- game state -----
+	void world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y);
+	void screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y);
 
-	//input tracking for local player:
-	Player::Controls controls;
+	//----- game state -----
+	ImageRenderer img_renderer;
+	TextRenderer text_renderer;
+	int8_t player_id = -1;
+	Player *player = nullptr;
+	Character *character = nullptr;
+	bool single_player = true;
+
+	CommonData *common_data;
 
 	//latest game state (from server):
 	Game game;

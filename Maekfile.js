@@ -142,7 +142,8 @@ const client_names = [
 	//maek.CPP('ColorTextureProgram.cpp'),  //not used right now, but you might want it
 	maek.CPP('Sound.cpp'),
 	maek.CPP('load_wav.cpp'),
-	maek.CPP('load_opus.cpp')
+	maek.CPP('load_opus.cpp'),
+	
 ];
 
 const server_names = [
@@ -164,7 +165,11 @@ const common_names = [
 	maek.CPP('GL.cpp'),
 	maek.CPP('Load.cpp'),
 	maek.CPP('Connection.cpp'),
-	maek.CPP('hex_dump.cpp')
+	maek.CPP('hex_dump.cpp'),
+	maek.CPP('ImageRenderer.cpp'),
+	maek.CPP('TextRenderer.cpp'),
+	maek.CPP('Entity.cpp'),
+	maek.CPP('Animation.cpp')
 ];
 
 const show_meshes_names = [
@@ -834,7 +839,7 @@ function init_maek() {
 		}
 
 		//get all hashes:
-		if (OS === 'windows') {
+		if (OS === 'windows' || OS === 'macos') {
 			//work in serial since otherwise windows can run out of file descriptors:
 			const hashes = [];
 			for (let file of files) {

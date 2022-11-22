@@ -1,58 +1,121 @@
 #pragma once
 
+#include "ImageRenderer.hpp"
+#include "data_path.hpp"
+#include "load_save_png.hpp"
+#include "Entity.hpp"
+#include "CommonData.hpp"
+#include "Map.hpp"
+
 #include <glm/glm.hpp>
 
-#include <string>
+#include <stdint.h>
 #include <list>
+#include <array>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <cassert>
 #include <random>
+#include <deque>
+
+#include <iostream>
+#include <fstream>
+#include <chrono>
+
+#define SPRITE_DATA std::vector< glm::u8vec4 >
 
 struct Connection;
 
 //Game state, separate from rendering.
 
-//Currently set up for a "client sends controls" / "server sends whole state" situation.
+enum class MESSAGE : uint8_t {
+	MSG_NONE = 0,
+	SERVER_INIT = '1',
+	PLAYER_INPUT = '2',
+	PLAYER_READY = '3',
+	SERVER_READY = '4',
+	PLAYER_UPDATE = '5',
+};
 
-enum class Message : uint8_t {
-	C2S_Controls = 1, //Greg!
-	S2C_State = 's',
-	//...
+enum GameState : uint8_t {
+	GamePaused, // A count down or something
+	GameStarting,
+	PlaceClones,
+	FindClones,
+	KillClones,
+	GameOver
 };
 
 //used to represent a control input:
 struct Button {
-	uint8_t downs = 0; //times the button has been pressed
-	bool pressed = false; //is the button pressed now
+	enum State {
+		NONE,
+		BTN_DOWN,
+		BTN_IS_PRESSED,
+		BTN_RELEASE,
+	};
+
+	State state = State::NONE;
+};
+
+struct Player {
+    Player() = default;
+	Player(int8_t player_id) {
+		this->player_id = player_id;
+	}
+
+	int8_t player_id = -1;
+	Button left, right, up, down, mouse;
+	float mouse_x;
+	float mouse_y;
+	float shoot_interval = 0;
+	bool ready = false;
+	// time where player input was last updated
+	std::chrono::time_point<std::chrono::system_clock> time_updated;
+
+	void update(float elapsed);
+	void set_position(float new_x, float new_y);
+	void place_clone();
+	void try_shooting (); 
+	void read_player_data(const Player &other_player);
+	glm::vec2 get_direction();
+};
+
+struct MessageInfo {
+
+	MESSAGE tag;
+	// id of the message's owner
+	// server will broadcast a message to everyone except its owner
+	int8_t player_id;
+
+	MessageInfo();
+	MessageInfo(MESSAGE tag, int8_t id) {
+		this->tag = tag;
+		player_id = id;
+	}
 };
 
 //state of one player in the game:
-struct Player {
-	//player inputs (sent from client):
-	struct Controls {
-		Button left, right, up, down, jump;
-
-		void send_controls_message(Connection *connection) const;
-
-		//returns 'false' if no message or not a controls message,
-		//returns 'true' if read a controls message,
-		//throws on malformed controls message
-		bool recv_controls_message(Connection *connection);
-	} controls;
-
-	//player state (sent from server):
-	glm::vec2 position = glm::vec2(0.0f, 0.0f);
-	glm::vec2 velocity = glm::vec2(0.0f, 0.0f);
-
-	glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
-	std::string name = "";
-};
 
 struct Game {
-	std::list< Player > players; //(using list so they can have stable addresses)
+	std::vector<Player> players;
+	std::deque<MessageInfo> message_queue;
+	std::deque<MessageInfo> action_queue;
+
 	Player *spawn_player(); //add player the end of the players list (may also, e.g., play some spawn anim)
 	void remove_player(Player *); //remove player from game (may also, e.g., play some despawn anim)
 
 	std::mt19937 mt; //used for spawning players
-	uint32_t next_player_number = 1; //used for naming players
+	uint32_t player_cnt = 0; //used for naming players
+
+	CommonData *common_data;
+
+	GameState state = PlaceClones;
+	bool ready = false;
 
 	Game();
 
@@ -63,25 +126,29 @@ struct Game {
 	//the update rate on the server:
 	inline static constexpr float Tick = 1.0f / 30.0f;
 
-	//arena size:
-	inline static constexpr glm::vec2 ArenaMin = glm::vec2(-0.75f, -1.0f);
-	inline static constexpr glm::vec2 ArenaMax = glm::vec2( 0.75f,  1.0f);
-
-	//player constants:
-	inline static constexpr float PlayerRadius = 0.06f;
-	inline static constexpr float PlayerSpeed = 2.0f;
-	inline static constexpr float PlayerAccelHalflife = 0.25f;
+	float time_remaining = PLACE_CLONE_PHASE_DURATION;
+	// TODO: optimize
+	float time_elapsed = 0;	// Should be PLACE_CLONE_PHASE_DURATION - time_remaining. Fix later
 	
+	std::vector<MapObject> create_map();
+
+	void update_place_clones(float elapsed);
+	void update_find_clones(float elapsed);
+	void update_kill_clones(float elapsed);
+
+	void setup_place_clones();
+	void setup_find_clones();
+	void setup_kill_clones();
+
+	int get_section_index(float x, float y);
+	bool is_in_section(int section_index, float x, float y);
+
 
 	//---- communication helpers ----
+	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;
+	MESSAGE recv_message(Connection *connection_, Player *client_player, bool is_server);
+	void process_action(Player *player, MESSAGE message_type);
 
-	//used by client:
-	//set game state from data in connection buffer
-	// (return true if data was read)
-	bool recv_state_message(Connection *connection);
-
-	//used by server:
-	//send game state.
-	//  Will move "connection_player" to the front of the front of the sent list.
-	void send_state_message(Connection *connection, Player *connection_player = nullptr) const;
+	private:
+		void update_animations(float elapsed);
 };

@@ -5,96 +5,587 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstring>
+#include <cassert>
+
+#include "hex_dump.hpp"
 
 #include <glm/gtx/norm.hpp>
-
-void Player::Controls::send_controls_message(Connection *connection_) const {
-	assert(connection_);
-	auto &connection = *connection_;
-
-	uint32_t size = 5;
-	connection.send(Message::C2S_Controls);
-	connection.send(uint8_t(size));
-	connection.send(uint8_t(size >> 8));
-	connection.send(uint8_t(size >> 16));
-
-	auto send_button = [&](Button const &b) {
-		if (b.downs & 0x80) {
-			std::cerr << "Wow, you are really good at pressing buttons!" << std::endl;
-		}
-		connection.send(uint8_t( (b.pressed ? 0x80 : 0x00) | (b.downs & 0x7f) ) );
-	};
-
-	send_button(left);
-	send_button(right);
-	send_button(up);
-	send_button(down);
-	send_button(jump);
-}
-
-bool Player::Controls::recv_controls_message(Connection *connection_) {
-	assert(connection_);
-	auto &connection = *connection_;
-
-	auto &recv_buffer = connection.recv_buffer;
-
-	//expecting [type, size_low0, size_mid8, size_high8]:
-	if (recv_buffer.size() < 4) return false;
-	if (recv_buffer[0] != uint8_t(Message::C2S_Controls)) return false;
-	uint32_t size = (uint32_t(recv_buffer[3]) << 16)
-	              | (uint32_t(recv_buffer[2]) << 8)
-	              |  uint32_t(recv_buffer[1]);
-	if (size != 5) throw std::runtime_error("Controls message with size " + std::to_string(size) + " != 5!");
-	
-	//expecting complete message:
-	if (recv_buffer.size() < 4 + size) return false;
-
-	auto recv_button = [](uint8_t byte, Button *button) {
-		button->pressed = (byte & 0x80);
-		uint32_t d = uint32_t(button->downs) + uint32_t(byte & 0x7f);
-		if (d > 255) {
-			std::cerr << "got a whole lot of downs" << std::endl;
-			d = 255;
-		}
-		button->downs = uint8_t(d);
-	};
-
-	recv_button(recv_buffer[4+0], &left);
-	recv_button(recv_buffer[4+1], &right);
-	recv_button(recv_buffer[4+2], &up);
-	recv_button(recv_buffer[4+3], &down);
-	recv_button(recv_buffer[4+4], &jump);
-
-	//delete message from buffer:
-	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
-
-	return true;
-}
 
 
 //-----------------------------------------
 
 Game::Game() : mt(0x15466666) {
+	std::vector<std::pair<uint32_t, const char *>> sprite_paths = {
+		std::pair(SPRITE::PLAYER_SPRITE_RED, "sprites/player_sprite_red.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_BLUE, "sprites/player_sprite_blue.png"),
+		std::pair(SPRITE::CLONE_SPRITE_RED, "sprites/clone_sprite_red.png"),
+		std::pair(SPRITE::CLONE_SPRITE_BLUE, "sprites/clone_sprite_blue.png"),
+		std::pair(SPRITE::WALL_SPRITE, "sprites/wall.png"),
+		std::pair(SPRITE::BULLET_SPRITE, "sprites/bullet.png"),	
+		std::pair(SPRITE::FENCE_SELF_H, "sprites/fence_self_h.png"),
+		std::pair(SPRITE::FENCE_SELF_V, "sprites/fence_self_v.png"),
+		std::pair(SPRITE::FENCE_HALF_T, "sprites/fence_half_t.png"),
+		std::pair(SPRITE::FENCE_HALF_R, "sprites/fence_half_r.png"),
+		std::pair(SPRITE::FENCE_HALF_B, "sprites/fence_half_b.png"),
+		std::pair(SPRITE::FENCE_HALF_L, "sprites/fence_half_l.png"),
+		std::pair(SPRITE::FENCE_FULL_H, "sprites/fence_full_h.png"),
+		std::pair(SPRITE::FENCE_FULL_V, "sprites/fence_full_v.png"),
+		std::pair(SPRITE::FENCE_T_T, "sprites/fence_t_t.png"),
+		std::pair(SPRITE::FENCE_T_R, "sprites/fence_t_r.png"),
+		std::pair(SPRITE::FENCE_T_B, "sprites/fence_t_b.png"),
+		std::pair(SPRITE::FENCE_T_L, "sprites/fence_t_l.png"),
+		std::pair(SPRITE::FENCE_CORNER_TR, "sprites/fence_corner_tr.png"),
+		std::pair(SPRITE::FENCE_CORNER_RB, "sprites/fence_corner_rb.png"),
+		std::pair(SPRITE::FENCE_CORNER_BL, "sprites/fence_corner_bl.png"),
+		std::pair(SPRITE::FENCE_CORNER_LT, "sprites/fence_corner_lt.png"),
+		std::pair(SPRITE::CLOCK_1, "sprites/clock_1.png"),
+		std::pair(SPRITE::CLOCK_2, "sprites/clock_2.png"),
+		std::pair(SPRITE::CLOCK_3, "sprites/clock_3.png"),
+		std::pair(SPRITE::CLOCK_4, "sprites/clock_4.png"),
+		std::pair(SPRITE::CLOCK_5, "sprites/clock_5.png"),
+		std::pair(SPRITE::CLOCK_6, "sprites/clock_6.png"),
+		std::pair(SPRITE::CLOCK_7, "sprites/clock_7.png"),
+		std::pair(SPRITE::CLOCK_8, "sprites/clock_8.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_1, "sprites/player_sprite_reload_red_1.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_2, "sprites/player_sprite_reload_red_2.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_3, "sprites/player_sprite_reload_red_3.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_RED_4, "sprites/player_sprite_reload_red_4.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_1, "sprites/player_sprite_reload_blue_1.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2, "sprites/player_sprite_reload_blue_2.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3, "sprites/player_sprite_reload_blue_3.png"),
+		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4, "sprites/player_sprite_reload_blue_4.png"),
+	};
+	
+	common_data = CommonData::get_instance();
+
+	for (size_t i = 0; i < sprite_paths.size(); ++i) {
+		const auto& p = sprite_paths[i];
+		ImageData s;
+		load_png(data_path(std::string(p.second)), &s.size, &s.pixels, LowerLeftOrigin);
+		s.sprite_index = static_cast<uint8_t>(i);
+		common_data->sprites.emplace_back(s);
+	}
+
+	common_data->map = Map(create_map());
+
+	common_data->characters.reserve(2);
+	Character c1(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
+	Character c2(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1);
+	auto rl1 = SPRITE::PLAYER_SPRITE_RELOAD_RED_1;
+	auto rl2 = SPRITE::PLAYER_SPRITE_RELOAD_RED_2;
+	auto rl3 = SPRITE::PLAYER_SPRITE_RELOAD_RED_3;
+	auto rl4 = SPRITE::PLAYER_SPRITE_RELOAD_RED_4;
+	auto bl1 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_1;
+	auto bl2 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2;
+	auto bl3 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3;
+	auto bl4 = SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4;
+	std::vector<SPRITE> red_shooting_animation = {rl1, rl2, rl3, rl4};
+	std::vector<SPRITE> blue_shooting_animation = {bl1, bl2, bl3, bl4};
+	c1.anim.init(red_shooting_animation, PLAYER_SHOOTING_ANIMATION_SPEED, false, false);
+	c2.anim.init(blue_shooting_animation, PLAYER_SHOOTING_ANIMATION_SPEED, false, false);
+	common_data->characters.emplace_back(std::move(c1));
+	common_data->characters.emplace_back(std::move(c2));
+
+	players.reserve(2);
+	players.emplace_back(Player(0));
+	players.emplace_back(Player(1));
+}
+
+std::vector<MapObject> Game::create_map() {
+	std::vector<MapObject> objs;
+	struct wp {
+		wp(float x, float y, SPRITE s) {
+			this->x = x;
+			this->y = y;
+			this->s = s;
+		}
+		float x;
+		float y;
+		SPRITE s;
+	};
+	auto rw1 = SPRITE::CLOCK_1;
+	auto rw2 = SPRITE::CLOCK_2;
+	auto rw3 = SPRITE::CLOCK_3;
+	auto rw4 = SPRITE::CLOCK_4;
+	auto rw5 = SPRITE::CLOCK_5;
+	auto rw6 = SPRITE::CLOCK_6;
+	auto rw7 = SPRITE::CLOCK_7;
+	auto rw8 = SPRITE::CLOCK_8;
+	auto fctr = SPRITE::FENCE_CORNER_TR;
+	auto ffh = SPRITE::FENCE_FULL_H;
+	auto ffv = SPRITE::FENCE_FULL_V;
+	auto fcrb = SPRITE::FENCE_CORNER_RB;
+	auto fcbl = SPRITE::FENCE_CORNER_BL;
+	auto fclt = SPRITE::FENCE_CORNER_LT;
+	auto fsh = SPRITE::FENCE_SELF_H;
+	auto fsv = SPRITE::FENCE_SELF_V;
+	auto fht = SPRITE::FENCE_HALF_T;
+	auto fhr = SPRITE::FENCE_HALF_R;
+	auto fhb = SPRITE::FENCE_HALF_B;
+	auto fhl = SPRITE::FENCE_HALF_L;
+	auto ftt = SPRITE::FENCE_T_T;
+	// auto ftr = SPRITE::FENCE_T_R;
+	auto ftb = SPRITE::FENCE_T_B;
+	auto ftl = SPRITE::FENCE_T_L;
+
+	std::vector<wp> red_walls = {
+		// RED
+		// 2
+		wp(600.f, -200.f, rw1),
+		wp(400.f, -200.f, rw1),
+		wp(200.f, -200.f, rw2),
+		wp(0.f, -200.f, rw3),
+
+		// 3
+		wp(800.f, 0.f, rw3),
+
+		// 4
+		wp(600.f, 200.f, rw3),
+		wp(400.f, 200.f, rw1),
+		wp(200.f, 200.f, rw2),
+		wp(0.f, 200.f, rw3),
+
+		// 1
+		wp(600.f, -800.f, rw3),
+		wp(400.f, -800.f, rw1),
+		wp(200.f, -800.f, rw2),
+		wp(0.f, -800.f, rw3),
+
+		// 5
+		wp(600.f, 800.f, rw3),
+		wp(400.f, 800.f, rw1),
+		wp(200.f, 800.f, rw2),
+		wp(0.f, 800.f, rw3),
+
+		// 6
+		wp(800.f, 1000.f, rw3),
+		wp(800.f, 1200.f, rw1),
+
+		// 11
+		wp(800.f, -1000.f, rw3),
+		wp(800.f, -1200.f, rw1),
+		wp(800.f, -1400.f, rw2),
+		wp(800.f, -1600.f, rw3),
+
+		// 12
+		wp(1000.f, -1800.f, rw3),
+		wp(1200.f, -1800.f, rw3),
+		wp(1400.f, -1800.f, rw3),
+		wp(1600.f, -1800.f, rw3),
+		wp(1800.f, -1800.f, rw3),
+		wp(2000.f, -1800.f, rw3),
+		wp(2200.f, -1800.f, rw3),
+		wp(2400.f, -1800.f, rw3),
+		wp(2600.f, -1800.f, rw3),
+		wp(2800.f, -1800.f, rw3),
+		wp(3000.f, -1800.f, rw3),
+		wp(3200.f, -1800.f, rw3),
+		wp(3400.f, -1800.f, rw3),
+		wp(3600.f, -1800.f, rw3),
+		wp(3800.f, -1800.f, rw3),
+		wp(4000.f, -1800.f, rw3),
+		wp(4200.f, -1800.f, rw3),
+		wp(4400.f, -1800.f, rw3),
+		wp(4600.f, -1800.f, rw3),
+		wp(4800.f, -1800.f, rw3),
+		wp(5000.f, -1800.f, rw3),
+
+		// 13
+		wp(1000.f, 1400.f, rw3),
+		wp(1200.f, 1400.f, rw3),
+		wp(1400.f, 1400.f, rw3),
+		wp(1600.f, 1400.f, rw3),
+		wp(1800.f, 1400.f, rw3),
+		wp(2000.f, 1400.f, rw3),
+		wp(2200.f, 1400.f, rw3),
+		wp(2400.f, 1400.f, rw3),
+		wp(2600.f, 1400.f, rw3),
+		wp(2800.f, 1400.f, rw3),
+		wp(3000.f, 1400.f, rw3),
+		wp(3200.f, 1400.f, rw3),
+		wp(3400.f, 1400.f, rw3),
+		wp(3600.f, 1400.f, rw3),
+		wp(3800.f, 1400.f, rw3),
+		wp(4000.f, 1400.f, rw3),
+		wp(4200.f, 1400.f, rw3),
+		wp(4400.f, 1400.f, rw3),
+		wp(4600.f, 1400.f, rw3),
+		wp(4800.f, 1400.f, rw3),
+		wp(5000.f, 1400.f, rw3),
+
+		// 15
+		wp(2400.f, 1200.f, rw3),
+		wp(2400.f, 1000.f, rw3),
+		wp(2400.f, 800.f, rw3),
+		wp(2400.f, 600.f, rw3),
+
+		// 8
+		wp(1800.f, 1000.f, rw3),
+		wp(1800.f, 800.f, rw3),
+		wp(1800.f, 600.f, rw3),
+		wp(1800.f, 400.f, rw3),
+		wp(1800.f, 200.f, rw3),
+		wp(1800.f, 0.f, rw3),
+		wp(1800.f, -200.f, rw3),
+		wp(1800.f, -400.f, rw3),
+		wp(1800.f, -600.f, rw3),
+		wp(1800.f, -800.f, rw3),
+		wp(1800.f, -1000.f, rw3),
+
+		// 23
+		wp(2000.f, -1000.f, rw3),
+		wp(2200.f, -1000.f, rw3),
+		wp(2400.f, -1000.f, rw3),
+		wp(2600.f, -1000.f, rw3),
+		wp(2800.f, -1000.f, rw3),
+
+		// 20
+		wp(2400.f, -400.f, rw3),
+		wp(2400.f, -200.f, rw3),
+
+		// 25
+		wp(2400.f, -1600.f, rw3),
+		wp(2400.f, -1400.f, rw3),
+
+		// 17
+		wp(3000.f, 0.f, rw3),
+		wp(3000.f, 200.f, rw3),
+		wp(3000.f, 400.f, rw3),
+		wp(3000.f, 600.f, rw3),
+		wp(3000.f, 800.f, rw3),
+		wp(3000.f, 800.f, rw3),
+		wp(3000.f, 1000.f, rw3),
+
+		// 16
+		wp(3200.f, 1000.f, rw3),
+		wp(3400.f, 1000.f, rw3),
+		wp(3600.f, 1000.f, rw3),
+
+		// 18
+		wp(4000.f, 1200.f, rw3),
+		wp(4000.f, 1000.f, rw3),
+		wp(4000.f, 800.f, rw3),
+		wp(4000.f, 600.f, rw3),
+
+		// 19
+		wp(3800.f, 600.f, rw3),
+		wp(3600.f, 600.f, rw3),
+
+		// 21
+		wp(3600.f, 0.f, rw3),
+		wp(3600.f, -200.f, rw3),
+		wp(3600.f, -400.f, rw3),
+		wp(3600.f, -600.f, rw3),
+		wp(3600.f, -800.f, rw3),
+		wp(3600.f, -1000.f, rw3),
+
+		// 22
+		wp(3400.f, -600.f, rw3),
+
+		// 23
+		wp(4200.f, 400.f, rw3),
+		wp(4200.f, -100.f, rw3),
+		wp(4200.f, -600.f, rw3),
+		wp(4200.f, -1100.f, rw3),
+		wp(4800.f, 400.f, rw3),
+		wp(4800.f, -100.f, rw3),
+		wp(4800.f, -600.f, rw3),
+		wp(4800.f, -1100.f, rw3),
+
+		// 24
+		wp(5200.f, 1400.f, rw3),
+		wp(5200.f, 1200.f, rw3),
+		wp(5200.f, 1000.f, rw3),
+		wp(5200.f, 800.f, rw3),
+		wp(5200.f, 600.f, rw3),
+		wp(5200.f, 400.f, rw3),
+		wp(5200.f, 200.f, rw3),
+		wp(5200.f, 00.f, rw3),
+		wp(5200.f, -200.f, rw3),
+		wp(5200.f, -400.f, rw3),
+		wp(5200.f, -600.f, rw3),
+		wp(5200.f, -800.f, rw3),
+		wp(5200.f, -1000.f, rw3),
+		wp(5200.f, -1200.f, rw3),
+		wp(5200.f, -1400.f, rw3),
+		wp(5200.f, -1600.f, rw3),
+		wp(5200.f, -1800.f, rw3),
+	};
+		
+		// ---------------------------------------------------------------------
+	std::vector<wp> blue_walls = {
+		// BLUE
+		// 2
+		wp(-600.f, -200.f, fctr),
+		wp(-400.f, -200.f, ffh),
+		wp(-200.f, -200.f, fhl),
+
+		// 10
+		wp(-600.f, 0.f, ffv),
+
+		// 4
+		wp(-600.f, 200.f, fcrb),
+		wp(-400.f, 200.f, ffh),
+		wp(-200.f, 200.f, fhl),
+
+		// 1
+		wp(-600.f, -800.f, fcrb),
+		wp(-400.f, -800.f, ffh),
+		wp(-200.f, -800.f, fhl),
+
+		// 9
+		wp(-600.f, -1000.f, ffv),
+		wp(-600.f, -1200.f, ffv),
+		wp(-600.f, -1400.f, fclt),
+
+		// 5
+		wp(-600.f, 800.f, ffh),
+		wp(-400.f, 800.f, ffh),
+		wp(-200.f, 800.f, fhl),
+
+		// 11
+		wp(-800.f, 800.f, fctr),
+		wp(-800.f, 1000.f, ffv),
+		wp(-800.f, 1200.f, ffv),
+		wp(-800.f, 1400.f, fcbl),
+
+		// 6
+		wp(-1000.f, 1400.f, ffh),
+		wp(-1200.f, 1400.f, ffh),
+		wp(-1400.f, 1400.f, ftb),
+		wp(-1600.f, 1400.f, ffh),
+		wp(-1800.f, 1400.f, ffh),
+		wp(-2000.f, 1400.f, ffh),
+		wp(-2200.f, 1400.f, ffh),
+		wp(-2400.f, 1400.f, ffh),
+		wp(-2600.f, 1400.f, ffh),
+		wp(-2800.f, 1400.f, ffh),
+		wp(-3000.f, 1400.f, ftb),
+		wp(-3200.f, 1400.f, ffh),
+		wp(-3400.f, 1400.f, ffh),
+		wp(-3600.f, 1400.f, ffh),
+		wp(-3800.f, 1400.f, ffh),
+		wp(-4000.f, 1400.f, ffh),
+		wp(-4200.f, 1400.f, ffh),
+		wp(-4400.f, 1400.f, ffh),
+		wp(-4600.f, 1400.f, ffh),
+		wp(-4800.f, 1400.f, ffh),
+
+		// 8
+		wp(-800.f, -1400.f, ffh),
+		wp(-1000.f, -1400.f, ffh),
+		wp(-1200.f, -1400.f, ffh),
+		wp(-1400.f, -1400.f, ffh),
+		wp(-1600.f, -1400.f, ffh),
+		wp(-1800.f, -1400.f, ffh),
+		wp(-2000.f, -1400.f, ffh),
+		wp(-2200.f, -1400.f, ffh),
+		wp(-2400.f, -1400.f, ffh),
+		wp(-2600.f, -1400.f, ffh),
+		wp(-2800.f, -1400.f, ftt),
+		wp(-3000.f, -1400.f, ffh),
+		wp(-3200.f, -1400.f, ffh),
+		wp(-3400.f, -1400.f, ffh),
+		wp(-3600.f, -1400.f, ffh),
+		wp(-3800.f, -1400.f, ffh),
+		wp(-4000.f, -1400.f, ffh),
+		wp(-4200.f, -1400.f, ffh),
+		wp(-4400.f, -1400.f, ffh),
+		wp(-4600.f, -1400.f, ffh),
+		wp(-4800.f, -1400.f, ffh),
+		
+		// 12
+		wp(-1200.f, 600.f, fhb),
+		wp(-1200.f, 400.f, ffv),
+		wp(-1200.f, 200.f, fclt),
+
+		// 13
+		wp(-1400.f, 200.f, ffh),
+		wp(-1600.f, 200.f, fhr),
+
+		// 14
+		wp(-1200.f, -800.f, fclt),
+		wp(-1200.f, -600.f, ffv),
+		wp(-1200.f, -400.f, ffv),
+		wp(-1200.f, -200.f, fhb),
+
+
+		// 15
+		wp(-1400.f, -800.f, ffh),
+		wp(-1600.f, -800.f, ffh),
+		wp(-1800.f, -800.f, ffh),
+		wp(-2000.f, -800.f, ffh),
+		wp(-2200.f, -800.f, ffh),
+		wp(-2400.f, -800.f, fhr),
+
+		// 16
+		wp(-2000.f, -400.f, fhl),
+		wp(-2200.f, -400.f, ffh),
+		wp(-2400.f, -400.f, fctr),
+
+		// 17
+		wp(-2400.f, -200.f, ffv),
+		wp(-2400.f, 0.f, ftl),
+		wp(-2400.f, 200.f, ffv),
+		wp(-2400.f, 400.f, ffv),
+		wp(-2400.f, 600.f, ffv),
+		wp(-2400.f, 800.f, ffv),
+		wp(-2400.f, 1000.f, fcrb),
+		// 18
+		wp(-2200.f, 1000.f, ffh),
+		wp(-2000.f, 1000.f, ffh),
+		wp(-1800.f, 1000.f, fhl),
+
+		// 19
+		wp(-1600.f, -300.f, fsv),
+
+		// 3
+		wp(-1400.f, 1200.f, fht),
+
+		// 19.2
+		wp(-2600.f, 0.f, ffh),
+		wp(-2800.f, 0.f, ffh),
+		wp(-3000.f, 0.f, ffh),
+		wp(-3200.f, 0.f, fcrb),
+
+		// 20
+		wp(-3200.f, -200.f, ffv),
+		wp(-3200.f, -400.f, ffv),
+		wp(-3200.f, -600.f, ffv),
+		wp(-3200.f, -800.f, fht),
+
+		// 21
+		wp(-2800.f, -1200.f, ffv),
+		wp(-2800.f, -1000.f, fhb),
+
+		// 22.1
+		wp(-2800.f, -400.f, fsh),
+
+		// 22
+		wp(-3200.f, 400.f, fsh),
+
+		// 23
+		wp(-3000.f, 800.f, fht),
+		wp(-3000.f, 1000.f, ffv),
+		wp(-3000.f, 1200.f, ffv),
+
+		// 24
+		wp(-3600.f, 1000.f, fhl),
+		wp(-3800.f, 1000.f, ffh),
+		wp(-4000.f, 1000.f, ffh),
+
+		// 25
+		wp(-4200.f, 800.f, fht),
+		wp(-4200.f, 1000.f, fcrb),
+
+		// 26
+		wp(-4200.f, 400.f, fsh),
+		wp(-4200.f, -200.f, fsh),
+		wp(-4200.f, -800.f, fsh),
+		wp(-3700.f, 400.f, fsv),
+		wp(-3700.f, -200.f, fsv),
+		wp(-3700.f, -800.f, fsv),
+
+		// 7
+		wp(-5000.f, 1400.f, fcrb),
+		wp(-5000.f, 1200.f, ffv),
+		wp(-5000.f, 1000.f, ffv),
+		wp(-5000.f, 800.f, ffv),
+		wp(-5000.f, 600.f, ffv),
+		wp(-5000.f, 400.f, ffv),
+		wp(-5000.f, 200.f, ffv),
+		wp(-5000.f, 0.f, ffv),
+		wp(-5000.f, -200.f, ffv),
+		wp(-5000.f, -400.f, ffv),
+		wp(-5000.f, -600.f, ffv),
+		wp(-5000.f, -800.f, ffv),
+		wp(-5000.f, -1000.f, ffv),
+		wp(-5000.f, -1200.f, ffv),
+		wp(-5000.f, -1400.f, fctr),
+
+	};
+
+	// Animations (Probably somewhere better to put this and organize this code, just putting it here for now)	
+	std::vector<SPRITE> clock_animation = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	for (auto p : red_walls) {
+		MapObject m(p.x, p.y, p.s); 
+		m.anim.init(clock_animation, CLOCK_ANIMATION_SPEED, true, true);
+		objs.emplace_back(std::move(m));	
+	}
+	for (auto p : blue_walls) {
+		objs.emplace_back(MapObject(p.x, p.y, p.s));	
+	}
+	return objs;
 }
 
 Player *Game::spawn_player() {
-	players.emplace_back();
-	Player &player = players.back();
+	assert(player_cnt < 2);
 
-	//random point in the middle area of the arena:
-	player.position.x = glm::mix(ArenaMin.x + 2.0f * PlayerRadius, ArenaMax.x - 2.0f * PlayerRadius, 0.4f + 0.2f * mt() / float(mt.max()));
-	player.position.y = glm::mix(ArenaMin.y + 2.0f * PlayerRadius, ArenaMax.y - 2.0f * PlayerRadius, 0.4f + 0.2f * mt() / float(mt.max()));
+	Player &player = players[player_cnt];
 
-	do {
-		player.color.r = mt() / float(mt.max());
-		player.color.g = mt() / float(mt.max());
-		player.color.b = mt() / float(mt.max());
-	} while (player.color == glm::vec3(0.0f));
-	player.color = glm::normalize(player.color);
-
-	player.name = "Player " + std::to_string(next_player_number++);
+	player_cnt++;
 
 	return &player;
+}
+
+void Player::try_shooting() {
+	if (shoot_interval > 0) {
+		return;
+	}
+
+	shoot_interval = BULLET_INTERVAL;
+
+	CommonData *common_data = CommonData::get_instance();
+	Character& c = common_data->characters[player_id];
+
+	// Being playing shooting animation
+	c.anim.playing = true;
+
+	glm::vec2 shoot_velo;
+	shoot_velo.x = mouse_x - c.x;
+	shoot_velo.y = mouse_y - c.y;
+	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
+
+	common_data->bullets.emplace_back(Bullet(c.x, c.y, SPRITE::BULLET_SPRITE, shoot_velo, player_id, c.rotation));	
+	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
+	common_data->bullets.back().move_bullet(amount_to_move);
+} 
+
+void Player::place_clone() {
+	SPRITE clone_sprite;
+	// determine clone color by player id: 0 for red, 1 for blue
+	if (player_id == 0) {
+		clone_sprite = SPRITE::CLONE_SPRITE_RED;
+	} else {
+		clone_sprite = SPRITE::CLONE_SPRITE_BLUE;
+	}
+	Clone clone = Clone(mouse_x, mouse_y, clone_sprite, player_id); 
+	CommonData::get_instance()->clones.emplace_back(clone);	
+}
+
+void Player::read_player_data(const Player &other_player) {
+	this->player_id = other_player.player_id;
+	this->left = other_player.left;
+	this->right = other_player.right;
+	this->up = other_player.up;
+	this->down = other_player.down;
+	this->mouse = other_player.mouse;
+	this->mouse_x = other_player.mouse_x;
+	this->mouse_y = other_player.mouse_y;
+}
+
+glm::vec2 Player::get_direction() {
+	glm::vec2 dir = glm::vec2(0.0f, 0.0f);
+	if (left.state == Button::BTN_IS_PRESSED) dir.x -= 1.0f;
+	if (right.state == Button::BTN_IS_PRESSED) dir.x += 1.0f;
+	if (down.state == Button::BTN_IS_PRESSED) dir.y -= 1.0f;
+	if (up.state == Button::BTN_IS_PRESSED) dir.y += 1.0f;
+
+	if (dir.x != 0 || dir.y != 0) {
+		dir = glm::normalize(dir);
+	}
+
+	return dir;
 }
 
 void Game::remove_player(Player *player) {
@@ -103,96 +594,287 @@ void Game::remove_player(Player *player) {
 		if (&*pi == player) {
 			players.erase(pi);
 			found = true;
+			// TODO: add mechanism for reconnecting players
 			break;
 		}
 	}
 	assert(found);
 }
 
-void Game::update(float elapsed) {
-	//position/velocity update:
-	for (auto &p : players) {
-		glm::vec2 dir = glm::vec2(0.0f, 0.0f);
-		if (p.controls.left.pressed) dir.x -= 1.0f;
-		if (p.controls.right.pressed) dir.x += 1.0f;
-		if (p.controls.down.pressed) dir.y -= 1.0f;
-		if (p.controls.up.pressed) dir.y += 1.0f;
-
-		if (dir == glm::vec2(0.0f)) {
-			//no inputs: just drift to a stop
-			float amt = 1.0f - std::pow(0.5f, elapsed / (PlayerAccelHalflife * 2.0f));
-			p.velocity = glm::mix(p.velocity, glm::vec2(0.0f,0.0f), amt);
-		} else {
-			//inputs: tween velocity to target direction
-			dir = glm::normalize(dir);
-
-			float amt = 1.0f - std::pow(0.5f, elapsed / PlayerAccelHalflife);
-
-			//accelerate along velocity (if not fast enough):
-			float along = glm::dot(p.velocity, dir);
-			if (along < PlayerSpeed) {
-				along = glm::mix(along, PlayerSpeed, amt);
-			}
-
-			//damp perpendicular velocity:
-			float perp = glm::dot(p.velocity, glm::vec2(-dir.y, dir.x));
-			perp = glm::mix(perp, 0.0f, amt);
-
-			p.velocity = dir * along + glm::vec2(-dir.y, dir.x) * perp;
-		}
-		p.position += p.velocity * elapsed;
-
-		//reset 'downs' since controls have been handled:
-		p.controls.left.downs = 0;
-		p.controls.right.downs = 0;
-		p.controls.up.downs = 0;
-		p.controls.down.downs = 0;
-		p.controls.jump.downs = 0;
-	}
-
-	//collision resolution:
-	for (auto &p1 : players) {
-		//player/player collisions:
-		for (auto &p2 : players) {
-			if (&p1 == &p2) break;
-			glm::vec2 p12 = p2.position - p1.position;
-			float len2 = glm::length2(p12);
-			if (len2 > (2.0f * PlayerRadius) * (2.0f * PlayerRadius)) continue;
-			if (len2 == 0.0f) continue;
-			glm::vec2 dir = p12 / std::sqrt(len2);
-			//mirror velocity to be in separating direction:
-			glm::vec2 v12 = p2.velocity - p1.velocity;
-			glm::vec2 delta_v12 = dir * glm::max(0.0f, -1.75f * glm::dot(dir, v12));
-			p2.velocity += 0.5f * delta_v12;
-			p1.velocity -= 0.5f * delta_v12;
-		}
-		//player/arena collisions:
-		if (p1.position.x < ArenaMin.x + PlayerRadius) {
-			p1.position.x = ArenaMin.x + PlayerRadius;
-			p1.velocity.x = std::abs(p1.velocity.x);
-		}
-		if (p1.position.x > ArenaMax.x - PlayerRadius) {
-			p1.position.x = ArenaMax.x - PlayerRadius;
-			p1.velocity.x =-std::abs(p1.velocity.x);
-		}
-		if (p1.position.y < ArenaMin.y + PlayerRadius) {
-			p1.position.y = ArenaMin.y + PlayerRadius;
-			p1.velocity.y = std::abs(p1.velocity.y);
-		}
-		if (p1.position.y > ArenaMax.y - PlayerRadius) {
-			p1.position.y = ArenaMax.y - PlayerRadius;
-			p1.velocity.y =-std::abs(p1.velocity.y);
-		}
-	}
-
+void Game::setup_place_clones() {
+	state = PlaceClones;
+	time_remaining = PLACE_CLONE_PHASE_DURATION;
 }
 
+void Game::update_place_clones(float elapsed) {
+	time_remaining -= elapsed;
+	time_elapsed += elapsed;
+	if (time_remaining < 0) {
+		setup_find_clones();
+		return;
+	}
 
-void Game::send_state_message(Connection *connection_, Player *connection_player) const {
+	// Record character snapshot
+	for (Character &c : common_data->characters) {
+		c.phase1_replay_buffer.emplace_back(c.x, c.y, time_elapsed);
+		c.phase1_replay_buffer_2.emplace_back(c.x, c.y, time_elapsed);
+	}
+}
+
+void Game::setup_find_clones() {
+	time_elapsed = 0;
+	state = FindClones;
+	time_remaining = FIND_CLONE_PHASE_DURATION;
+	common_data->characters[0].x = PLAYER1_STARTING_X;
+	common_data->characters[0].y = PLAYER1_STARTING_Y;
+	common_data->characters[1].x = PLAYER0_STARTING_X;
+	common_data->characters[1].y = PLAYER0_STARTING_Y;
+
+	// Setup the shadows
+	common_data->shadows.resize(common_data->characters.size());
+	for (Character &c : common_data->characters) {
+		SPRITE shadow_sprite;
+		// determine clone color by player id: 0 for red, 1 for blue
+		if (c.player_id == 0) {
+			shadow_sprite = SPRITE::CLONE_SPRITE_RED;
+		} else {
+			shadow_sprite = SPRITE::CLONE_SPRITE_BLUE;
+		}
+		const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
+		common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  shadow_sprite, c.player_id);
+	}
+}
+
+void Game::update_find_clones(float elapsed) {
+	time_remaining -= elapsed;
+	time_elapsed += elapsed;
+	if (time_remaining < 0) {
+		setup_kill_clones();
+		return;
+	}
+
+	// Replay character in phase 1 as shadow
+	for (Character &c : common_data->characters) {
+		while (c.phase1_replay_buffer.size() > 0) {
+			const auto & first_snapshot = c.phase1_replay_buffer[0];
+
+			// Stop replaying if we've reached the current time
+			if (first_snapshot.timestamp > time_elapsed) {
+				break;
+			}
+
+			// Replay the snapshot
+			common_data->shadows[c.player_id].x = first_snapshot.x;
+			common_data->shadows[c.player_id].y = first_snapshot.y;
+
+			// Remove the snapshot
+			c.phase1_replay_buffer.pop_front();
+		}
+	}
+}
+
+void Game::setup_kill_clones() {
+	state = KillClones;
+	time_remaining = KILL_CLONE_PHASE_DURATION;
+	common_data->characters[0].x = PLAYER1_STARTING_X;
+	common_data->characters[0].y = PLAYER1_STARTING_Y;
+	common_data->characters[1].x = PLAYER0_STARTING_X;
+	common_data->characters[1].y = PLAYER0_STARTING_Y;
+
+	time_elapsed = 0;
+
+	// // Setup the shadows
+	// common_data->shadows.resize(common_data->characters.size());
+	// for (Character &c : common_data->characters) {
+	// 	SPRITE shadow_sprite;
+	// 	// determine clone color by player id: 0 for red, 1 for blue
+	// 	if (c.player_id == 0) {
+	// 		shadow_sprite = SPRITE::CLONE_SPRITE_RED;
+	// 	} else {
+	// 		shadow_sprite = SPRITE::CLONE_SPRITE_BLUE;
+	// 	}
+	// 	const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
+	// 	common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  shadow_sprite, c.player_id);
+	// }
+}
+
+void Game::update_kill_clones(float elapsed) {
+	time_remaining -= elapsed;	
+	time_elapsed += elapsed;
+	if (time_remaining < 0) {
+		printf("Time is up!\n");
+		state = GameOver;
+		return;
+	}
+
+	// Replay character in phase 1 as shadow
+	for (Character &c : common_data->characters) {
+		while (c.phase1_replay_buffer_2.size() > 0) {
+			const auto & first_snapshot = c.phase1_replay_buffer_2[0];
+
+			// Stop replaying if we've reached the current time
+			if (first_snapshot.timestamp > time_elapsed) {
+				break;
+			}
+
+			// Replay the snapshot
+			common_data->shadows[c.player_id].x = first_snapshot.x;
+			common_data->shadows[c.player_id].y = first_snapshot.y;
+
+			// Remove the snapshot
+			c.phase1_replay_buffer_2.pop_front();
+		}
+	}
+
+	// TODO: win condition
+	// if (clones.size() == 0) {
+	// 	printf("You Win!\n");
+	// 	state = GameOver;
+	// 	return;
+	// }
+
+	// Move everything
+	for (Bullet &bullet : common_data->bullets) {
+		bullet.move_bullet(elapsed);
+		for (Clone &clone : common_data->clones) {
+			if (bullet.collide(clone)) {
+				clone.take_damage(BULLET_DAMAGE);
+				bullet.active = false;
+
+				if (clone.hp <= 0) {
+					common_data->characters[clone.player_id].score++;
+				}
+			}
+		}
+		for (Shadow &shadow : common_data->shadows) {
+			if (bullet.collide(shadow)) {
+				shadow.take_damage(BULLET_DAMAGE);
+				bullet.active = false;
+
+				if (shadow.hp <= 0) {
+					common_data->characters[shadow.player_id].score++;
+				}
+			}
+		}
+		for (Character &character : common_data->characters) {
+			if (bullet.collide(character)) {
+				character.take_damage(BULLET_DAMAGE);
+				bullet.active = false;
+			}
+		}
+
+		int bullet_section_id = common_data->map.get_section_id(bullet.x, bullet.y);
+		for (MapObject &map_obj : common_data->map.sections[bullet_section_id]) {
+			if (bullet.collide(map_obj)) {
+				bullet.active = false;
+			}
+		}
+		if (bullet.lifetime > BULLET_LIFETIME) {
+			bullet.active = false;;
+		}
+	}
+
+	// remove items that should be destroyed
+	common_data->bullets.erase(
+		std::remove_if(common_data->bullets.begin(),
+					   common_data->bullets.end(),
+					   [](Bullet bullet){return !bullet.active;}),
+		common_data->bullets.end()
+	);
+
+	common_data->clones.erase(
+		std::remove_if(common_data->clones.begin(),
+					   common_data->clones.end(),
+					   [](Clone clone){return clone.hp <= 0;}),
+		common_data->clones.end()
+	);
+
+	common_data->shadows.erase(
+		std::remove_if(common_data->shadows.begin(),
+					   common_data->shadows.end(),
+					   [](Clone clone){return clone.hp <= 0;}),
+		common_data->shadows.end()
+	);
+
+	for (Player &player : players) {
+		player.shoot_interval -= elapsed;
+	}
+}
+
+void Game::update(float elapsed) {
+	// wait if players haven't arrived yet
+	if (!ready) {
+		return;
+	}
+
+	for (Player &player : players) {
+		// TODO: register the buttons and store them with timestamps
+		if (player.left.state == Button::BTN_DOWN) {
+			player.left.state = Button::BTN_IS_PRESSED;
+		}
+		if (player.right.state == Button::BTN_DOWN) {
+			player.right.state = Button::BTN_IS_PRESSED;
+		}
+		if (player.up.state == Button::BTN_DOWN) {
+			player.up.state = Button::BTN_IS_PRESSED;
+		}
+		if (player.down.state == Button::BTN_DOWN) {
+			player.down.state = Button::BTN_IS_PRESSED;
+		}
+		if (player.mouse.state == Button::BTN_DOWN) {
+			// TODO: refactor
+			player.mouse.state = Button::BTN_IS_PRESSED;
+			if (state == PlaceClones) {
+				int clone_num = 0;
+				for (Clone clone : common_data->clones) {
+					if (clone.player_id == player.player_id) {
+						clone_num++;
+					}
+				}
+				if (clone_num < NUM_CLONES) {
+					player.place_clone();
+				}
+			}
+			if (state == KillClones) {
+				player.try_shooting();
+			}
+		}
+
+		glm::vec2 dir = player.get_direction();
+		common_data->characters[player.player_id].move_character(dir.x * PLAYER_SPEED * elapsed, dir.y * PLAYER_SPEED * elapsed);
+	}
+
+	switch(state) {
+		case PlaceClones:
+			update_place_clones(elapsed);
+			break;
+		case FindClones:
+			update_find_clones(elapsed);
+			break;
+		case KillClones:	
+			update_kill_clones(elapsed);
+			break;
+		default:
+			break;
+	}
+	update_animations(elapsed);
+}
+
+void Game::update_animations(float elapsed) {
+	// Only do it for the things that need to be updated?
+	for (MapObject& map_obj : common_data->map.map_objects) {
+		map_obj.anim.update(elapsed);
+	}	
+	for (Character& c : common_data->characters) {
+		c.anim.update(elapsed);
+	}
+}
+
+void Game::send_message(Connection *connection_, Player *connection_player, MESSAGE message_type) const {
 	assert(connection_);
 	auto &connection = *connection_;
 
-	connection.send(Message::S2C_State);
+	connection.send(message_type);
 	//will patch message size in later, for now placeholder bytes:
 	connection.send(uint8_t(0));
 	connection.send(uint8_t(0));
@@ -200,49 +882,77 @@ void Game::send_state_message(Connection *connection_, Player *connection_player
 	size_t mark = connection.send_buffer.size(); //keep track of this position in the buffer
 
 
-	//send player info helper:
-	auto send_player = [&](Player const &player) {
-		connection.send(player.position);
-		connection.send(player.velocity);
-		connection.send(player.color);
-	
-		//NOTE: can't just 'send(name)' because player.name is not plain-old-data type.
-		//effectively: truncates player name to 255 chars
-		uint8_t len = uint8_t(std::min< size_t >(255, player.name.size()));
-		connection.send(len);
-		connection.send_buffer.insert(connection.send_buffer.end(), player.name.begin(), player.name.begin() + len);
+	auto send_character = [&](Character const &character) {
+		connection.send(character.x);
+		connection.send(character.y);
+		connection.send(character.sprite_index);
+		connection.send(character.hp);
+		connection.send(character.rotation);
 	};
 
-	//player count:
-	connection.send(uint8_t(players.size()));
-	if (connection_player) send_player(*connection_player);
-	for (auto const &player : players) {
-		if (&player == connection_player) continue;
-		send_player(player);
+	auto send_player = [&](Player const &player) {
+		connection.send(player.player_id);
+		connection.send(player.left.state);
+		connection.send(player.right.state);
+		connection.send(player.up.state);
+		connection.send(player.down.state);
+		connection.send(player.mouse.state);
+		connection.send(player.mouse_x);
+		connection.send(player.mouse_y);
+		connection.send(player.time_updated);
+	};
+
+	switch(message_type) {
+		case MESSAGE::SERVER_INIT:
+			std::cout << "send server_init\n";
+			connection.send(connection_player->player_id);
+			break;
+		case MESSAGE::PLAYER_INPUT:
+			// std::cout << "send player input\n";
+			send_player(*connection_player);
+			send_character(common_data->characters[connection_player->player_id]);
+			break;
+		case MESSAGE::PLAYER_READY:
+			std::cout << "send player ready\n";
+			break;
+		case MESSAGE::SERVER_READY:
+			std::cout << "send server ready\n";
+			// sending out the message type as signal
+			break;
+		case MESSAGE::PLAYER_UPDATE:
+			connection.send(connection_player->player_id);
+			connection.send(common_data->characters[connection_player->player_id].rotation);
+			break;
+		default:
+			std::cout << "this should not happen\n";
+			break;
 	}
+
 
 	//compute the message size and patch into the message header:
 	uint32_t size = uint32_t(connection.send_buffer.size() - mark);
 	connection.send_buffer[mark-3] = uint8_t(size);
 	connection.send_buffer[mark-2] = uint8_t(size >> 8);
 	connection.send_buffer[mark-1] = uint8_t(size >> 16);
+	// std::cout << "[" << connection.socket << "] recv'd data. Current buffer:\n" << hex_dump(connection.send_buffer); std::cout.flush(); //DEBUG
 }
 
-bool Game::recv_state_message(Connection *connection_) {
+MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool is_server) {
 	assert(connection_);
 	auto &connection = *connection_;
 	auto &recv_buffer = connection.recv_buffer;
 
-	if (recv_buffer.size() < 4) return false;
-	if (recv_buffer[0] != uint8_t(Message::S2C_State)) return false;
+	//expecting [type, size_low0, size_mid8, size_high8]:
+	if (recv_buffer.size() < 4) return MESSAGE::MSG_NONE;
 	uint32_t size = (uint32_t(recv_buffer[3]) << 16)
 	              | (uint32_t(recv_buffer[2]) << 8)
 	              |  uint32_t(recv_buffer[1]);
-	uint32_t at = 0;
+	
 	//expecting complete message:
-	if (recv_buffer.size() < 4 + size) return false;
+	if (recv_buffer.size() < 4 + size) return MESSAGE::MSG_NONE;
+	
 
-	//copy bytes from buffer and advance position:
+	uint32_t at = 0;
 	auto read = [&](auto *val) {
 		if (at + sizeof(*val) > size) {
 			throw std::runtime_error("Ran out of bytes reading state message.");
@@ -251,30 +961,106 @@ bool Game::recv_state_message(Connection *connection_) {
 		at += sizeof(*val);
 	};
 
-	players.clear();
-	uint8_t player_count;
-	read(&player_count);
-	for (uint8_t i = 0; i < player_count; ++i) {
-		players.emplace_back();
-		Player &player = players.back();
-		read(&player.position);
-		read(&player.velocity);
-		read(&player.color);
-		uint8_t name_len;
-		read(&name_len);
-		//n.b. would probably be more efficient to directly copy from recv_buffer, but I think this is clearer:
-		player.name = "";
-		for (uint8_t n = 0; n < name_len; ++n) {
-			char c;
-			read(&c);
-			player.name += c;
+	auto read_character = [&](Character *character) {
+		read(&character->x);
+		read(&character->y);
+		read(&character->sprite_index);
+		read(&character->hp);
+		read(&character->rotation);
+	};
+
+	auto read_player = [&](Player *player) {
+		read(&player->player_id);
+		read(&player->left.state);
+		read(&player->right.state);
+		read(&player->up.state);
+		read(&player->down.state);
+		read(&player->mouse.state);
+		read(&player->mouse_x);
+		read(&player->mouse_y);
+		read(&player->time_updated);
+	};
+
+	MESSAGE message_type = (MESSAGE) recv_buffer[0];
+	switch(message_type) {
+		case MESSAGE::SERVER_INIT:
+			std::cout << "read server_init\n";
+			assert(!is_server);
+			read(&client_player->player_id);
+			break;
+		case MESSAGE::PLAYER_INPUT: {
+			// std::cout << "read player_input\n";
+			read_player(client_player);
+			read_character(&common_data->characters[client_player->player_id]);
+			if (is_server) {
+				message_queue.push_back(MessageInfo(MESSAGE::PLAYER_INPUT, client_player->player_id));
+				action_queue.push_back(MessageInfo(MESSAGE::PLAYER_INPUT, client_player->player_id));
+			}
+			else {
+				// adjust character position for network latency for clients
+				// server will do this later (after it relays the message) to prevent double counting
+				std::chrono::time_point<std::chrono::system_clock> client_tp = client_player->time_updated;
+				std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
+				std::chrono::duration<float> f_latency = latency;
+				std::cout << "latency is: " << f_latency.count() << "\n";
+				glm::vec2 displacement = client_player->get_direction() * f_latency.count() * PLAYER_SPEED;
+				common_data->characters[client_player->player_id].move_character(displacement.x, displacement.y);
+			}
+			break;
 		}
+		case MESSAGE::PLAYER_READY:
+			std::cout << "read player_ready\n";
+			assert(is_server);
+			client_player->ready = true;
+			if (players[0].ready && players[1].ready) {
+				ready = true;
+				message_queue.push_back(MessageInfo(MESSAGE::SERVER_READY, 1));
+				message_queue.push_back(MessageInfo(MESSAGE::SERVER_READY, 0));
+			}
+			break;
+		case MESSAGE::SERVER_READY:
+			std::cout << "read server_ready\n";
+			assert(!is_server);
+			players[0].ready = true;
+			players[1].ready = true;
+			ready = true;
+			break;
+		case MESSAGE::PLAYER_UPDATE:
+			read(&client_player->player_id);
+			read(&common_data->characters[client_player->player_id].rotation);
+			if (is_server) {
+				message_queue.push_back(MessageInfo(MESSAGE::PLAYER_UPDATE, client_player->player_id));
+			}
+			break;
+		default:
+			// TODO: raise an error here if we know this shouldn't happen
+			std::cout << "No matching tag " << std::to_string((uint8_t)message_type) << ", probably an error here\n";
+			return MESSAGE::MSG_NONE;
 	}
 
-	if (at != size) throw std::runtime_error("Trailing data in state message.");
-
+	// std::cout << "[" << connection.socket << "] recv'd data. Current buffer:\n" << hex_dump(connection.recv_buffer); std::cout.flush(); //DEBUG
 	//delete message from buffer:
 	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
 
-	return true;
+	return message_type;
+}
+
+// process queued server actions after server relays its message
+void Game::process_action(Player *player, MESSAGE message_type) {
+	switch(message_type) {
+		case MESSAGE::PLAYER_UPDATE: {
+			// TODO: extract it to helper function
+			// adjust character position for network latency
+			std::chrono::time_point<std::chrono::system_clock> client_tp = player->time_updated;
+			std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
+			std::chrono::duration<float> f_latency = latency;
+			std::cout << "latency is: " << f_latency.count() << "\n";
+			glm::vec2 displacement = player->get_direction() * f_latency.count() * PLAYER_SPEED;
+			common_data->characters[player->player_id].move_character(displacement.x, displacement.y);
+			break;
+		}
+		default:
+			std::cout << "No matching tag " << std::to_string((uint8_t)message_type) << ", probably an error here\n";
+			break;
+	}
 }

@@ -184,7 +184,7 @@ void poll_connections(
 //---------------------------------
 
 
-Server::Server(std::string const &port) {
+Server::Server(std::string const &host, std::string const &port) {
 
 	#ifdef _WIN32
 	{ //init winsock:
@@ -203,7 +203,14 @@ Server::Server(std::string const &port) {
 		hints.ai_flags = AI_PASSIVE;
 
 		struct addrinfo *res = nullptr;
-		int addrinfo_ret = getaddrinfo(NULL, port.c_str(), &hints, &res);
+
+		int addrinfo_ret;
+		
+		if (host.size() > 0) {
+			addrinfo_ret = getaddrinfo(host.c_str(), port.c_str(), &hints, &res);
+		} else {
+			addrinfo_ret = getaddrinfo(NULL, port.c_str(), &hints, &res);
+		}
 		if (addrinfo_ret != 0) {
 			throw std::runtime_error("getaddrinfo error: " + std::string(gai_strerror(addrinfo_ret)));
 		}
