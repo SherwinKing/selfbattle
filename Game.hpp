@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 #define SPRITE_DATA std::vector< glm::u8vec4 >
 
@@ -37,6 +38,7 @@ enum class MESSAGE : uint8_t {
 	PLAYER_INPUT = '2',
 	PLAYER_READY = '3',
 	SERVER_READY = '4',
+	PLAYER_UPDATE = '5',
 };
 
 enum GameState : uint8_t {
@@ -72,12 +74,15 @@ struct Player {
 	float mouse_y;
 	float shoot_interval = 0;
 	bool ready = false;
+	// time where player input was last updated
+	std::chrono::time_point<std::chrono::system_clock> time_updated;
 
 	void update(float elapsed);
 	void set_position(float new_x, float new_y);
 	void place_clone();
 	void try_shooting (); 
 	void read_player_data(const Player &other_player);
+	glm::vec2 get_direction();
 };
 
 struct MessageInfo {
@@ -99,6 +104,7 @@ struct MessageInfo {
 struct Game {
 	std::vector<Player> players;
 	std::deque<MessageInfo> message_queue;
+	std::deque<MessageInfo> action_queue;
 
 	Player *spawn_player(); //add player the end of the players list (may also, e.g., play some spawn anim)
 	void remove_player(Player *); //remove player from game (may also, e.g., play some despawn anim)
@@ -141,6 +147,7 @@ struct Game {
 	//---- communication helpers ----
 	void send_message(Connection *connection_, Player *client_player, MESSAGE message_type) const;
 	MESSAGE recv_message(Connection *connection_, Player *client_player, bool is_server);
+	void process_action(Player *player, MESSAGE message_type);
 
 	private:
 		void update_animations(float elapsed);

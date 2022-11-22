@@ -61,6 +61,7 @@ public:
     }
 
     inline int get_section_id(float x, float y) {
+        if (x == max_x) return section_num - 1;
         float dx = x - min_x;
         int section_index = (int) (dx / section_width);
         return section_index;

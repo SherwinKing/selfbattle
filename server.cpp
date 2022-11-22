@@ -37,8 +37,8 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	std::string port;
 	std::string host;
+	std::string port;
 	if (argc >= 3) {
 		host = argv[1];
 		port = argv[2];
@@ -128,6 +128,13 @@ int main(int argc, char **argv) {
 			// send it to the other player
 			Connection *c = player_to_connection[!message.player_id];
 			game.send_message(c, &game.players[message.player_id], message.tag);
+			game.message_queue.pop_front();
+		}
+
+		// complete updates related to the messages (like input sync)
+		while (game.message_queue.size() != 0) {
+			MessageInfo message = game.message_queue.front();
+			game.process_action(&game.players[message.player_id], message.tag);
 			game.message_queue.pop_front();
 		}
 

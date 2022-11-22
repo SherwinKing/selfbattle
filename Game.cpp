@@ -546,7 +546,7 @@ void Player::try_shooting() {
 	shoot_velo.y = mouse_y - c.y;
 	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
 
-	common_data->bullets.emplace_back(Bullet(c.x, c.y, SPRITE::BULLET_SPRITE, shoot_velo, player_id));	
+	common_data->bullets.emplace_back(Bullet(c.x, c.y, SPRITE::BULLET_SPRITE, shoot_velo, player_id, c.rotation));	
 	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
 	common_data->bullets.back().move_bullet(amount_to_move);
 } 
@@ -572,6 +572,20 @@ void Player::read_player_data(const Player &other_player) {
 	this->mouse = other_player.mouse;
 	this->mouse_x = other_player.mouse_x;
 	this->mouse_y = other_player.mouse_y;
+}
+
+glm::vec2 Player::get_direction() {
+	glm::vec2 dir = glm::vec2(0.0f, 0.0f);
+	if (left.state == Button::BTN_IS_PRESSED) dir.x -= 1.0f;
+	if (right.state == Button::BTN_IS_PRESSED) dir.x += 1.0f;
+	if (down.state == Button::BTN_IS_PRESSED) dir.y -= 1.0f;
+	if (up.state == Button::BTN_IS_PRESSED) dir.y += 1.0f;
+
+	if (dir.x != 0 || dir.y != 0) {
+		dir = glm::normalize(dir);
+	}
+
+	return dir;
 }
 
 void Game::remove_player(Player *player) {
@@ -825,16 +839,9 @@ void Game::update(float elapsed) {
 				player.try_shooting();
 			}
 		}
-		glm::vec2 dir = glm::vec2(0.0f, 0.0f);
-		if (player.left.state == Button::BTN_IS_PRESSED) dir.x -= 1.0f;
-		if (player.right.state == Button::BTN_IS_PRESSED) dir.x += 1.0f;
-		if (player.down.state == Button::BTN_IS_PRESSED) dir.y -= 1.0f;
-		if (player.up.state == Button::BTN_IS_PRESSED) dir.y += 1.0f;
 
-		if (dir.x != 0 || dir.y != 0) {
-			dir = glm::normalize(dir);
-			common_data->characters[player.player_id].move_character(dir.x * PLAYER_SPEED, dir.y * PLAYER_SPEED);
-		}
+		glm::vec2 dir = player.get_direction();
+		common_data->characters[player.player_id].move_character(dir.x * PLAYER_SPEED * elapsed, dir.y * PLAYER_SPEED * elapsed);
 	}
 
 	switch(state) {
@@ -879,8 +886,8 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 		connection.send(character.x);
 		connection.send(character.y);
 		connection.send(character.sprite_index);
-		connection.send(character.rot);
 		connection.send(character.hp);
+		connection.send(character.rotation);
 	};
 
 	auto send_player = [&](Player const &player) {
@@ -892,8 +899,8 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 		connection.send(player.mouse.state);
 		connection.send(player.mouse_x);
 		connection.send(player.mouse_y);
+		connection.send(player.time_updated);
 	};
-
 
 	switch(message_type) {
 		case MESSAGE::SERVER_INIT:
@@ -901,7 +908,7 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 			connection.send(connection_player->player_id);
 			break;
 		case MESSAGE::PLAYER_INPUT:
-			std::cout << "send player input\n";
+			// std::cout << "send player input\n";
 			send_player(*connection_player);
 			send_character(common_data->characters[connection_player->player_id]);
 			break;
@@ -911,6 +918,10 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 		case MESSAGE::SERVER_READY:
 			std::cout << "send server ready\n";
 			// sending out the message type as signal
+			break;
+		case MESSAGE::PLAYER_UPDATE:
+			connection.send(connection_player->player_id);
+			connection.send(common_data->characters[connection_player->player_id].rotation);
 			break;
 		default:
 			std::cout << "this should not happen\n";
@@ -954,8 +965,8 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 		read(&character->x);
 		read(&character->y);
 		read(&character->sprite_index);
-		read(&character->rot);
 		read(&character->hp);
+		read(&character->rotation);
 	};
 
 	auto read_player = [&](Player *player) {
@@ -967,6 +978,7 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 		read(&player->mouse.state);
 		read(&player->mouse_x);
 		read(&player->mouse_y);
+		read(&player->time_updated);
 	};
 
 	MESSAGE message_type = (MESSAGE) recv_buffer[0];
@@ -976,15 +988,26 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			assert(!is_server);
 			read(&client_player->player_id);
 			break;
-		case MESSAGE::PLAYER_INPUT:
-			std::cout << "read player_input\n";
-			// TODO: adjust for network latency
+		case MESSAGE::PLAYER_INPUT: {
+			// std::cout << "read player_input\n";
 			read_player(client_player);
 			read_character(&common_data->characters[client_player->player_id]);
 			if (is_server) {
 				message_queue.push_back(MessageInfo(MESSAGE::PLAYER_INPUT, client_player->player_id));
+				action_queue.push_back(MessageInfo(MESSAGE::PLAYER_INPUT, client_player->player_id));
+			}
+			else {
+				// adjust character position for network latency for clients
+				// server will do this later (after it relays the message) to prevent double counting
+				std::chrono::time_point<std::chrono::system_clock> client_tp = client_player->time_updated;
+				std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
+				std::chrono::duration<float> f_latency = latency;
+				std::cout << "latency is: " << f_latency.count() << "\n";
+				glm::vec2 displacement = client_player->get_direction() * f_latency.count() * PLAYER_SPEED;
+				common_data->characters[client_player->player_id].move_character(displacement.x, displacement.y);
 			}
 			break;
+		}
 		case MESSAGE::PLAYER_READY:
 			std::cout << "read player_ready\n";
 			assert(is_server);
@@ -1002,6 +1025,13 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			players[1].ready = true;
 			ready = true;
 			break;
+		case MESSAGE::PLAYER_UPDATE:
+			read(&client_player->player_id);
+			read(&common_data->characters[client_player->player_id].rotation);
+			if (is_server) {
+				message_queue.push_back(MessageInfo(MESSAGE::PLAYER_UPDATE, client_player->player_id));
+			}
+			break;
 		default:
 			// TODO: raise an error here if we know this shouldn't happen
 			std::cout << "No matching tag " << std::to_string((uint8_t)message_type) << ", probably an error here\n";
@@ -1013,4 +1043,24 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 	recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + 4 + size);
 
 	return message_type;
+}
+
+// process queued server actions after server relays its message
+void Game::process_action(Player *player, MESSAGE message_type) {
+	switch(message_type) {
+		case MESSAGE::PLAYER_UPDATE: {
+			// TODO: extract it to helper function
+			// adjust character position for network latency
+			std::chrono::time_point<std::chrono::system_clock> client_tp = player->time_updated;
+			std::chrono::duration latency = std::chrono::system_clock::now() - client_tp;
+			std::chrono::duration<float> f_latency = latency;
+			std::cout << "latency is: " << f_latency.count() << "\n";
+			glm::vec2 displacement = player->get_direction() * f_latency.count() * PLAYER_SPEED;
+			common_data->characters[player->player_id].move_character(displacement.x, displacement.y);
+			break;
+		}
+		default:
+			std::cout << "No matching tag " << std::to_string((uint8_t)message_type) << ", probably an error here\n";
+			break;
+	}
 }

@@ -45,6 +45,7 @@ struct Entity {
 	BoundingBox box;
 	float x;
 	float y;
+	float rotation = 0; 
 	SPRITE sprite_index;
 	int8_t player_id = -1;
 	TAG tag;
@@ -67,7 +68,6 @@ struct CharacterSnapshot {
 };
 
 struct Character : Entity {
-	float rot = 0; 
     float hp = PLAYER_STARTING_HEALTH;
 	uint8_t player_id;
 	uint32_t score = 0;
@@ -111,13 +111,14 @@ struct Bullet : Entity {
 	bool active = true;
 
 	Bullet() = default;
-	Bullet(float start_x, float start_y, SPRITE sprite_index, glm::vec2& bullet_velo, int shooter_id) {
+	Bullet(float start_x, float start_y, SPRITE sprite_index, glm::vec2& bullet_velo, int shooter_id, float rotation) {
 		velo = bullet_velo;
 		x = start_x;
 		y = start_y;
 		tag = TAG::BULLET_TAG;
 		this->player_id = player_id;
 		this->sprite_index = sprite_index;
+		this->rotation = rotation;
 	}	
 
 	void move_bullet(float elapsed);
