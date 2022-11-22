@@ -71,7 +71,7 @@ ImageRenderer::ImageRenderer()
  * https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/text01_intro/text.cpp
  * Also used as reference: https://github.com/tangrams/harfbuzz-example/blob/master/src/hbshaper.h
  */
-void ImageRenderer::render_image(const ImageData & image_data, float x, float y, float rotation_degrees) {
+void ImageRenderer::render_image(const ImageData & image_data, float x, float y, float rotation_radians) {
 	uint32_t image_width = image_data.size.x;
 	uint32_t image_height = image_data.size.y;
 
@@ -124,12 +124,12 @@ void ImageRenderer::render_image(const ImageData & image_data, float x, float y,
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, image_data.pixels.data());
 
 	// Rotate the image to render
-	if (rotation_degrees != 0) {
-		glm::mat4 center_rotation_mat = glm::translate(glm::mat4(1.0f), glm::vec3(-center));
+	if (rotation_radians != 0) {
+		glm::mat4 center_rotation_mat = glm::translate(glm::mat4(1.0f), glm::vec3(center));
 		center_rotation_mat = glm::scale(center_rotation_mat, glm::vec3(sx, sy, 1.0f));
-		center_rotation_mat = glm::rotate(center_rotation_mat, glm::radians(rotation_degrees), glm::vec3(0.0, 0.0, 1.0));
+		center_rotation_mat = glm::rotate(center_rotation_mat, rotation_radians, glm::vec3(0.0, 0.0, 1.0));
 		center_rotation_mat = glm::scale(center_rotation_mat, glm::vec3(1.0f/sx, 1.0f/sy, 1.0f));
-		center_rotation_mat = glm::translate(center_rotation_mat, glm::vec3(center));
+		center_rotation_mat = glm::translate(center_rotation_mat, glm::vec3(-center));
 
 		bottom_left = center_rotation_mat * bottom_left;
 		bottom_right = center_rotation_mat * bottom_right;

@@ -838,7 +838,7 @@ function init_maek() {
 		}
 
 		//get all hashes:
-		if (OS === 'windows') {
+		if (OS === 'windows' || OS === 'macos') {
 			//work in serial since otherwise windows can run out of file descriptors:
 			const hashes = [];
 			for (let file of files) {
