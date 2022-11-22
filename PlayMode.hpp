@@ -30,7 +30,7 @@ struct PlayMode : Mode {
 	int8_t player_id = -1;
 	Player *player = nullptr;
 	Character *character = nullptr;
-	bool single_player = true;
+	bool single_player = false;
 
 	CommonData *common_data;
 

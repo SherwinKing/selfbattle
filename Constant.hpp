@@ -20,8 +20,8 @@ constexpr float BULLET_INTERVAL = 0.8f;
 constexpr float PLAYER_SIZE = 71.f;
 
 
-constexpr float PLACE_CLONE_PHASE_DURATION = 1.f;
-constexpr float FIND_CLONE_PHASE_DURATION = 1.f;
+constexpr float PLACE_CLONE_PHASE_DURATION = 30.f;
+constexpr float FIND_CLONE_PHASE_DURATION = 20.f;
 constexpr float KILL_CLONE_PHASE_DURATION = 50.f;
 
 
