@@ -14,6 +14,36 @@
 
 //-----------------------------------------
 
+BoundingBox character_box = {-73, 80, -75, 80};
+
+std::unordered_map<enum SPRITE, BoundingBox> sprite_bounding_box_map = {
+	{SPRITE::PLAYER_SPRITE_RED, character_box},
+	{SPRITE::PLAYER_SPRITE_BLUE, character_box},
+	{SPRITE::CLONE_SPRITE_RED, character_box},
+	{SPRITE::CLONE_SPRITE_BLUE, character_box},
+	{SPRITE::WALL_SPRITE, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::BULLET_SPRITE, { -2.0f, 2.0f, -2.0f, 2.0f }},
+	{SPRITE::FENCE_SELF_H, { -80.0f, 80.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_SELF_V, { -50.0f, 50.0f, -80.0f, 80.0f }},
+	{SPRITE::FENCE_HALF_T, { -50.0f, 50.0f, -80.0f, 100.0f }},
+	{SPRITE::FENCE_HALF_R, { -80.0f, 100.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_HALF_B, { -50.0f, 50.0f, -100.0f, 80.0f }},
+	{SPRITE::FENCE_HALF_L, { -100.0f, 80.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_FULL_H, { -100.0f, 100.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_FULL_V, { -50.0f, 50.0f, -100.0f, 100.0f }},
+	{SPRITE::FENCE_T_T, { -100.0f, 100.0f, -50.0f, 100.0f }},
+	{SPRITE::FENCE_T_R, { -50.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::FENCE_T_B, { -100.0f, 100.0f, -100.0f, 50.0f }},
+	{SPRITE::FENCE_T_L, { -100.0f, 50.0f, -100.0f, 100.0f }},
+	{SPRITE::FENCE_CORNER_TR, { -20.0f, 100.0f, -20.0f, 100.0f }},
+	{SPRITE::FENCE_CORNER_RB, { -20.0f, 100.0f, -100.0f, 20.0f }},
+	{SPRITE::FENCE_CORNER_BL, { -100.0f, 20.0f, -100.0f, 20.0f }},
+	{SPRITE::FENCE_CORNER_LT, { -100.0f, 20.0f, -20.0f, 100.0f }},
+	{SPRITE::CLOCK_1, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_2, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_3, { -100.0f, 100.0f, -100.0f, 100.0f }},
+};
+
 Game::Game() : mt(0x15466666) {
 	std::vector<std::pair<uint32_t, const char *>> sprite_paths = {
 		std::pair(SPRITE::PLAYER_SPRITE_RED, "sprites/player_sprite_red.png"),
@@ -473,7 +503,7 @@ std::vector<MapObject> Game::create_map() {
 
 	};
 	for (auto p : walls) {
-		objs.emplace_back(MapObject(p.x, p.y, p.s));	
+		objs.emplace_back(MapObject(p.x, p.y, p.s, sprite_bounding_box_map[p.s]));	
 	}
 	return objs;
 }

@@ -67,12 +67,14 @@ enum TAG : uint8_t {
 
 struct BoundingBox {
     BoundingBox() = default;
-    float width = 0;
-	float height = 0;
+    float dx_left = 0;
+	float dx_right = 0;
+	float dy_bottom = 0;
+	float dy_top = 0;
 };
 
 struct Entity {
-	BoundingBox box;
+	BoundingBox box = {-80, 80, -80, 80};
 	float x;
 	float y;
 	SPRITE sprite_index;
@@ -140,8 +142,9 @@ struct Bullet : Entity {
 	glm::vec2 velo;
 	bool active = true;
 
-	Bullet() = default;
+	// Bullet() = default;
 	Bullet(float start_x, float start_y, SPRITE sprite_index, glm::vec2& bullet_velo, int shooter_id) {
+		box = { -2, 2, -2, 2 };
 		velo = bullet_velo;
 		x = start_x;
 		y = start_y;
