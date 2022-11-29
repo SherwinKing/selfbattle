@@ -169,6 +169,7 @@ const common_names = [
 	maek.CPP('ImageRenderer.cpp'),
 	maek.CPP('TextRenderer.cpp'),
 	maek.CPP('Entity.cpp'),
+	maek.CPP('Animation.cpp')
 ];
 
 const show_meshes_names = [
@@ -838,7 +839,7 @@ function init_maek() {
 		}
 
 		//get all hashes:
-		if (OS === 'windows') {
+		if (OS === 'windows' || OS === 'macos') {
 			//work in serial since otherwise windows can run out of file descriptors:
 			const hashes = [];
 			for (let file of files) {

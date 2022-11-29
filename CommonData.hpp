@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <vector>
 
+#include "Constant.hpp"
 #include "Map.hpp"
 
 struct Bullet;

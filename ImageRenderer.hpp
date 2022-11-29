@@ -62,6 +62,6 @@ public:
 		sy = 2.0f / window_height;
 	}
 
-	void render_image(const ImageData & image_data, float x, float y, float rotation_degrees = 0.0f);
+	void render_image(const ImageData & image_data, float x, float y, float rotation_radians = 0.0f);
 	// void render_image(const std::vector<glm::u8vec4> &image, glm::uvec2 size, float x, float y);
 };
