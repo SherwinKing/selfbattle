@@ -14,8 +14,10 @@ enum TAG : uint8_t {
 
 struct BoundingBox {
     BoundingBox() = default;
-    float width = 0;
-	float height = 0;
+    float dx_left = 0;
+	float dx_right = 0;
+	float dy_bottom = 0;
+	float dy_top = 0;
 };
 
 struct Animation {
@@ -119,6 +121,7 @@ struct Bullet : Entity {
 		this->player_id = player_id;
 		this->sprite_index = sprite_index;
 		this->rotation = rotation;
+		this->box = {-3, 3, -3, 3};
 	}	
 
 	void move_bullet(float elapsed);

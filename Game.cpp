@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstring>
 #include <cassert>
+#include <random>
 
 #include "hex_dump.hpp"
 
@@ -13,6 +14,49 @@
 
 
 //-----------------------------------------
+
+BoundingBox character_box = {-70, 75, -70, 75};
+
+std::unordered_map<enum SPRITE, BoundingBox> sprite_bounding_box_map = {
+	{SPRITE::PLAYER_SPRITE_RED, character_box},
+	{SPRITE::PLAYER_SPRITE_BLUE, character_box},
+	{SPRITE::CLONE_SPRITE_RED, character_box},
+	{SPRITE::CLONE_SPRITE_BLUE, character_box},
+	{SPRITE::WALL_SPRITE, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::BULLET_SPRITE, { -2.0f, 2.0f, -2.0f, 2.0f }},
+	{SPRITE::FENCE_SELF_H, { -80.0f, 80.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_SELF_V, { -50.0f, 50.0f, -80.0f, 80.0f }},
+	{SPRITE::FENCE_HALF_T, { -50.0f, 50.0f, -80.0f, 100.0f }},
+	{SPRITE::FENCE_HALF_R, { -80.0f, 100.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_HALF_B, { -50.0f, 50.0f, -100.0f, 80.0f }},
+	{SPRITE::FENCE_HALF_L, { -100.0f, 80.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_FULL_H, { -100.0f, 100.0f, -50.0f, 50.0f }},
+	{SPRITE::FENCE_FULL_V, { -50.0f, 50.0f, -100.0f, 100.0f }},
+	{SPRITE::FENCE_T_T, { -100.0f, 100.0f, -50.0f, 100.0f }},
+	{SPRITE::FENCE_T_R, { -50.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::FENCE_T_B, { -100.0f, 100.0f, -100.0f, 50.0f }},
+	{SPRITE::FENCE_T_L, { -100.0f, 50.0f, -100.0f, 100.0f }},
+	{SPRITE::FENCE_CORNER_TR, { -20.0f, 100.0f, -20.0f, 100.0f }},
+	{SPRITE::FENCE_CORNER_RB, { -20.0f, 100.0f, -100.0f, 20.0f }},
+	{SPRITE::FENCE_CORNER_BL, { -100.0f, 20.0f, -100.0f, 20.0f }},
+	{SPRITE::FENCE_CORNER_LT, { -100.0f, 20.0f, -20.0f, 100.0f }},
+	{SPRITE::CLOCK_1, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_2, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_3, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_4, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_5, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_6, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_7, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::CLOCK_8, { -100.0f, 100.0f, -100.0f, 100.0f }},
+	{SPRITE::PLAYER_SPRITE_RELOAD_RED_1, character_box},
+	{SPRITE::PLAYER_SPRITE_RELOAD_RED_2, character_box},
+	{SPRITE::PLAYER_SPRITE_RELOAD_RED_3, character_box},
+	{SPRITE::PLAYER_SPRITE_RELOAD_RED_4, character_box},
+	{SPRITE::PLAYER_SPRITE_RELOAD_BLUE_1, character_box},
+	{SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2, character_box},
+	{SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3, character_box},
+	{SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4, character_box},
+};
 
 Game::Game() : mt(0x15466666) {
 	std::vector<std::pair<uint32_t, const char *>> sprite_paths = {
@@ -54,6 +98,9 @@ Game::Game() : mt(0x15466666) {
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2, "sprites/player_sprite_reload_blue_2.png"),
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3, "sprites/player_sprite_reload_blue_3.png"),
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4, "sprites/player_sprite_reload_blue_4.png"),
+		std::pair(SPRITE::BACKGROUND, "sprites/bg.png"),
+		std::pair(SPRITE::START, "sprites/start.png"),
+		std::pair(SPRITE::END, "sprites/end.png")
 	};
 	
 	common_data = CommonData::get_instance();
@@ -66,11 +113,13 @@ Game::Game() : mt(0x15466666) {
 		common_data->sprites.emplace_back(s);
 	}
 
-	common_data->map = Map(create_map());
+	common_data->map = Map(create_map(), create_bg());
 
 	common_data->characters.reserve(2);
 	Character c1(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
 	Character c2(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1);
+	c1.box = character_box;
+	c2.box = character_box;
 	auto rl1 = SPRITE::PLAYER_SPRITE_RELOAD_RED_1;
 	auto rl2 = SPRITE::PLAYER_SPRITE_RELOAD_RED_2;
 	auto rl3 = SPRITE::PLAYER_SPRITE_RELOAD_RED_3;
@@ -89,6 +138,13 @@ Game::Game() : mt(0x15466666) {
 	players.reserve(2);
 	players.emplace_back(Player(0));
 	players.emplace_back(Player(1));
+}
+
+SPRITE Game::create_start() { return SPRITE::START; }
+SPRITE Game::create_end() { return SPRITE::END; }
+
+MapObject Game::create_bg() {
+	return MapObject(BACKGROUND_X, BACKGROUND_Y, SPRITE::BACKGROUND); 
 }
 
 std::vector<MapObject> Game::create_map() {
@@ -506,14 +562,37 @@ std::vector<MapObject> Game::create_map() {
 	};
 
 	// Animations (Probably somewhere better to put this and organize this code, just putting it here for now)	
-	std::vector<SPRITE> clock_animation = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	
+	std::vector<SPRITE> clock_animation1 = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	std::vector<SPRITE> clock_animation2 = {rw2, rw8, rw7, rw1, rw3, rw4, rw2, rw6};
+	std::vector<SPRITE> clock_animation3 = {rw4, rw2, rw5, rw8, rw7, rw6, rw3, rw1};
+	std::vector<SPRITE> clock_animation4 = {rw1, rw3, rw2, rw5, rw7, rw8, rw6, rw4};
+	std::vector<SPRITE> clock_animation5 = {rw8, rw1, rw2, rw6, rw5, rw7, rw4, rw3};
+	std::vector<SPRITE> clock_animation6 = {rw2, rw6, rw8, rw4, rw3, rw1, rw5, rw7};
+	std::vector<std::vector<SPRITE>*> animations = {
+		&clock_animation1,
+		&clock_animation2,
+		&clock_animation3,
+		&clock_animation4,
+		&clock_animation5,
+		&clock_animation6
+	};
+
+	std::random_device rd;
+    std::default_random_engine eng(rd());
+    std::uniform_real_distribution<float> distr(0.f, 1.f);
+
 	for (auto p : red_walls) {
-		MapObject m(p.x, p.y, p.s); 
-		m.anim.init(clock_animation, CLOCK_ANIMATION_SPEED, true, true);
+		MapObject m(p.x, p.y, p.s, sprite_bounding_box_map[p.s]); 
+		size_t rand_ind = static_cast<size_t>(distr(eng) * static_cast<float>(animations.size()));
+		if (rand_ind == animations.size()) {
+			rand_ind--;	
+		}
+		m.anim.init(*(animations[rand_ind]), CLOCK_ANIMATION_SPEED, true, true);
 		objs.emplace_back(std::move(m));	
 	}
 	for (auto p : blue_walls) {
-		objs.emplace_back(MapObject(p.x, p.y, p.s));	
+		objs.emplace_back(MapObject(p.x, p.y, p.s, sprite_bounding_box_map[p.s]));	
 	}
 	return objs;
 }
@@ -560,6 +639,7 @@ void Player::place_clone() {
 		clone_sprite = SPRITE::CLONE_SPRITE_BLUE;
 	}
 	Clone clone = Clone(mouse_x, mouse_y, clone_sprite, player_id); 
+	clone.box = character_box;
 	CommonData::get_instance()->clones.emplace_back(clone);	
 }
 
@@ -642,6 +722,7 @@ void Game::setup_find_clones() {
 		}
 		const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
 		common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  shadow_sprite, c.player_id);
+		common_data->shadows[c.player_id].box = character_box;
 	}
 }
 
@@ -805,6 +886,9 @@ void Game::update(float elapsed) {
 	// wait if players haven't arrived yet
 	if (!ready) {
 		return;
+	}
+	if (state == GameOver) {
+		return;	
 	}
 
 	for (Player &player : players) {

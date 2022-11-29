@@ -7,8 +7,27 @@ void Entity::move(float dx, float dy) {
 }
 
 bool Entity::collide(Entity& other) {
-	// TODO: implement this
-	return sqrt((x-other.x)*(x-other.x)+(y-other.y)*(y-other.y)) < 80;
+	// // TODO: implement this
+	// return sqrt((x-other.x)*(x-other.x)+(y-other.y)*(y-other.y)) < 80;
+
+	// Ref: https://stackoverflow.com/questions/20925818/algorithm-to-check-if-two-boxes-overlap
+	float xmax = x + box.dx_right;
+	float xmin = x + box.dx_left;
+	float ymax = y + box.dy_top;
+	float ymin = y + box.dy_bottom;
+	// float xmax = x + box.width / 2;
+	// float xmin = x - box.width / 2;
+	// float ymax = y + box.height / 2;
+	// float ymin = y - box.height / 2;
+
+	float other_xmax = other.x + other.box.dx_right;
+	float other_xmin = other.x + other.box.dx_left;
+	float other_ymax = other.y + other.box.dy_top;
+	float other_ymin = other.y + other.box.dy_bottom;
+
+	bool if_box_collide = (xmax > other_xmin && xmin < other_xmax) && (ymax > other_ymin && ymin < other_ymax);
+	return if_box_collide;
+
 	// float halfw = w / 2.f;
 	// float halfh = h / 2.f;
 	// box.lo_x = x - halfw; 
