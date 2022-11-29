@@ -114,8 +114,9 @@ struct Game {
 
 	CommonData *common_data;
 
-	GameState state = PlaceClones;
+	GameState state = GameOver;
 	bool ready = false;
+	bool bg_drawn = false;
 
 	Game();
 
@@ -130,7 +131,10 @@ struct Game {
 	// TODO: optimize
 	float time_elapsed = 0;	// Should be PLACE_CLONE_PHASE_DURATION - time_remaining. Fix later
 	
+	SPRITE create_start();
+	SPRITE create_end();
 	std::vector<MapObject> create_map();
+	MapObject create_bg();
 
 	void update_place_clones(float elapsed);
 	void update_find_clones(float elapsed);

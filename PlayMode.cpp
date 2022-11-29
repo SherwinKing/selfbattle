@@ -233,89 +233,123 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		return;
 	}
 
-	if (!game.ready) {
-		text_renderer.render_text("Press any key to start", -0.5f, 0.0f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
-		return;
+	if (game.state == GameOver) {
+		img_renderer.render_image(common_data->sprites[SPRITE::END], 0.f, 0.f, 0.f);	
+		text_renderer.render_text("Statistics", -0.2f, 0.4f, END_TEXT_COLOR, 100);
+		text_renderer.render_text("Player 1", -0.52f, .2f, END_TEXT_COLOR, 70);
+		text_renderer.render_text("Player 2", .28f, 0.2f, END_TEXT_COLOR, 70);
+		
+		std::string kills1 = "Kills: " + std::to_string(3);
+		std::string kills2 = "Kills: " + std::to_string(2);
+		text_renderer.render_text(kills1, -0.52f, 0.0f, END_TEXT_COLOR, 50);
+		text_renderer.render_text(kills2, .28f, 0.0f, END_TEXT_COLOR, 50);
+
+		std::string deaths1 = "Deaths: " + std::to_string(2);
+		std::string deaths2 = "Deaths: " + std::to_string(3);
+		text_renderer.render_text(deaths1, -0.52f, -0.2f, END_TEXT_COLOR, 50);
+		text_renderer.render_text(deaths2, .28f, -0.2f, END_TEXT_COLOR, 50);
+
+		std::string score1 = "Score: " + std::to_string(35.0f);
+		std::string score2 = "Score: " + std::to_string(35.0f);
+		text_renderer.render_text(score1, -0.52f, -0.4f, END_TEXT_COLOR, 50);
+		text_renderer.render_text(score2, .28f, -0.4f, END_TEXT_COLOR, 50);
 	}
-
-
-	auto draw_entity = [&] (Entity &entity) {
-		float screen_x;
-		float screen_y;
-		world_to_opengl(entity.x, entity.y, drawable_size, screen_x, screen_y);
-		if (entity.anim.playing) {
-			assert(entity.anim.initialized);
-			img_renderer.render_image(common_data->sprites[entity.anim.animation[entity.anim.sprite_index]], screen_x, screen_y, entity.rotation);
-		}
-		else {
-			img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y, entity.rotation);
-		}
-	};
-
-	for (Character& c : common_data->characters) {
-		draw_entity(c);
-	}
-
-	for (Bullet& bullet : common_data->bullets) {
-		draw_entity(bullet);
-	}
-
-	for (Clone& clone : common_data->clones) {
-		draw_entity(clone);
-	}
-
-	for (Shadow& shadow : common_data->shadows) {
-		draw_entity(shadow);
-	}
-
-	for (MapObject& map_obj : common_data->map.map_objects) {
-		draw_entity(map_obj);
-	}
-
-	std::string game_state_text;
-	switch(game.state) {
-		case PlaceClones:
-			game_state_text = "Phase 1: Place clones";
-			break;
-		case FindClones:
-			game_state_text = "Phase 2: Search";
-			break;
-		case KillClones:	
-			game_state_text = "Phase 3: Kill clones";
-			break;
-		default:
-			game_state_text = "Unimplemented";
-			break;
-	}
-
-	text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
-
-	// formatting time manually because I wasn't able to find a library function
-	auto float_to_string = [](float f) {
-		std::string text = std::to_string(f);
-		int period_index = 0;
-		for (int i = 0; i < text.size(); i++) {
-			if (text[i] == '.') {
-				period_index = i;
-				break;
+	// Game start
+	else if (!game.ready) {
+		img_renderer.render_image(common_data->sprites[SPRITE::START], 0.f, 0.f, 0.f);	
+		text_renderer.render_text("Self Battle", -0.2f, 0.4f, START_TEXT_COLOR, 100);
+		text_renderer.render_text("A two player shooter!", -0.45f, -0.1f, START_TEXT_COLOR, 100);
+		text_renderer.render_text("Press _ to start", -0.25f, -0.4f, START_TEXT_COLOR, 80);
+	} else {
+		auto draw_entity = [&] (Entity &entity) {
+			float screen_x;
+			float screen_y;
+			world_to_opengl(entity.x, entity.y, drawable_size, screen_x, screen_y);
+			if (entity.anim.playing) {
+				assert(entity.anim.initialized);
+				img_renderer.render_image(common_data->sprites[entity.anim.animation[entity.anim.sprite_index]], screen_x, screen_y, entity.rotation);
 			}
+			else {
+				img_renderer.render_image(common_data->sprites[entity.sprite_index], screen_x, screen_y, entity.rotation);
+			}
+		};
+
+		// Draw the background before anything else (if not drawn yet)
+		// Game lags with background drawing continuously so commented out for now
+		/*
+		if (!game.bg_drawn) {
+			draw_entity(common_data->map.bg);
+			game.bg_drawn = true;
+		} 
+		*/
+
+		for (Character& c : common_data->characters) {
+			draw_entity(c);
 		}
-		text = text.substr(0, period_index + 3);
 
-		return text;
-	};
+		for (Bullet& bullet : common_data->bullets) {
+			draw_entity(bullet);
+		}
 
-	std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
-	text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
+		for (Clone& clone : common_data->clones) {
+			draw_entity(clone);
+		}
+
+		for (Shadow& shadow : common_data->shadows) {
+			draw_entity(shadow);
+		}
+
+		for (MapObject& map_obj : common_data->map.map_objects) {
+			draw_entity(map_obj);
+		}
+
+		std::string game_state_text;
+		switch(game.state) {
+			case PlaceClones:
+				game_state_text = "Phase 1: Place clones";
+				break;
+			case FindClones:
+				game_state_text = "Phase 2: Search";
+				break;
+			case KillClones:	
+				game_state_text = "Phase 3: Kill clones";
+				break;
+			default:
+				game_state_text = "Unimplemented";
+				break;
+		}
+
+		text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		// formatting time manually because I wasn't able to find a library function
+		auto float_to_string = [](float f) {
+			std::string text = std::to_string(f);
+			int period_index = 0;
+			for (int i = 0; i < text.size(); i++) {
+				if (text[i] == '.') {
+					period_index = i;
+					break;
+				}
+			}
+			text = text.substr(0, period_index + 3);
+
+			return text;
+		};
+
+		std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
+		text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
+		
+		std::string time_text = float_to_string(game.time_remaining);
+		text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+
+		std::string hp_text = "HP: " + float_to_string(character->hp);
+		text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		
+		std::string score_text = "Score: " + std::to_string(character->score);
+		text_renderer.render_text(hp_text, 0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+	}
 	
-	std::string time_text = float_to_string(game.time_remaining);
-	text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
-	std::string hp_text = "HP: " + float_to_string(character->hp);
-	text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 	
-	std::string score_text = "Score: " + std::to_string(character->score);
-	text_renderer.render_text(hp_text, 0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 	GL_ERRORS();
 }

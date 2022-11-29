@@ -16,6 +16,7 @@ const int average_num_per_section = 30;
 
 class Map {
 public:
+    MapObject bg;
     std::vector<MapObject> map_objects;
 
     // Collision detection used fields and methods
@@ -29,7 +30,10 @@ public:
     std::vector<std::vector<MapObject>> sections;
 
     Map() = default;
-
+    Map(std::vector<MapObject> map_objects, MapObject bg) : Map(map_objects) {
+        this->bg = bg;
+    }
+    
     Map(std::vector<MapObject> map_objects) {
         this->map_objects = map_objects;
 
