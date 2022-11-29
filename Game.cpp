@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstring>
 #include <cassert>
+#include <random>
 
 #include "hex_dump.hpp"
 
@@ -84,6 +85,9 @@ Game::Game() : mt(0x15466666) {
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2, "sprites/player_sprite_reload_blue_2.png"),
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3, "sprites/player_sprite_reload_blue_3.png"),
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4, "sprites/player_sprite_reload_blue_4.png"),
+		std::pair(SPRITE::BACKGROUND, "sprites/bg.png"),
+		std::pair(SPRITE::START, "sprites/start.png"),
+		std::pair(SPRITE::END, "sprites/end.png")
 	};
 	
 	common_data = CommonData::get_instance();
@@ -96,7 +100,7 @@ Game::Game() : mt(0x15466666) {
 		common_data->sprites.emplace_back(s);
 	}
 
-	common_data->map = Map(create_map());
+	common_data->map = Map(create_map(), create_bg());
 
 	common_data->characters.reserve(2);
 	Character c1(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
@@ -119,6 +123,13 @@ Game::Game() : mt(0x15466666) {
 	players.reserve(2);
 	players.emplace_back(Player(0));
 	players.emplace_back(Player(1));
+}
+
+SPRITE Game::create_start() { return SPRITE::START; }
+SPRITE Game::create_end() { return SPRITE::END; }
+
+MapObject Game::create_bg() {
+	return MapObject(BACKGROUND_X, BACKGROUND_Y, SPRITE::BACKGROUND); 
 }
 
 std::vector<MapObject> Game::create_map() {
@@ -536,10 +547,33 @@ std::vector<MapObject> Game::create_map() {
 	};
 
 	// Animations (Probably somewhere better to put this and organize this code, just putting it here for now)	
-	std::vector<SPRITE> clock_animation = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	
+	std::vector<SPRITE> clock_animation1 = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	std::vector<SPRITE> clock_animation2 = {rw2, rw8, rw7, rw1, rw3, rw4, rw2, rw6};
+	std::vector<SPRITE> clock_animation3 = {rw4, rw2, rw5, rw8, rw7, rw6, rw3, rw1};
+	std::vector<SPRITE> clock_animation4 = {rw1, rw3, rw2, rw5, rw7, rw8, rw6, rw4};
+	std::vector<SPRITE> clock_animation5 = {rw8, rw1, rw2, rw6, rw5, rw7, rw4, rw3};
+	std::vector<SPRITE> clock_animation6 = {rw2, rw6, rw8, rw4, rw3, rw1, rw5, rw7};
+	std::vector<std::vector<SPRITE>*> animations = {
+		&clock_animation1,
+		&clock_animation2,
+		&clock_animation3,
+		&clock_animation4,
+		&clock_animation5,
+		&clock_animation6
+	};
+
+	std::random_device rd;
+    std::default_random_engine eng(rd());
+    std::uniform_real_distribution<float> distr(0.f, 1.f);
+
 	for (auto p : red_walls) {
 		MapObject m(p.x, p.y, p.s); 
-		m.anim.init(clock_animation, CLOCK_ANIMATION_SPEED, true, true);
+		size_t rand_ind = static_cast<size_t>(distr(eng) * static_cast<float>(animations.size()));
+		if (rand_ind == animations.size()) {
+			rand_ind--;	
+		}
+		m.anim.init(*(animations[rand_ind]), CLOCK_ANIMATION_SPEED, true, true);
 		objs.emplace_back(std::move(m));	
 	}
 	for (auto p : blue_walls) {
@@ -835,6 +869,9 @@ void Game::update(float elapsed) {
 	// wait if players haven't arrived yet
 	if (!ready) {
 		return;
+	}
+	if (state == GameOver) {
+		return;	
 	}
 
 	for (Player &player : players) {

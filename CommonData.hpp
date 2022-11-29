@@ -16,7 +16,7 @@ typedef Clone Shadow;
 // https://refactoring.guru/design-patterns/singleton/cpp/example
 struct CommonData {
     Map map;
-    
+     
     std::vector<Bullet> bullets;
 	std::vector<Clone> clones;
     std::vector<ImageData> sprites;
