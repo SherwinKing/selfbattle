@@ -121,6 +121,7 @@ struct Bullet : Entity {
 		this->player_id = player_id;
 		this->sprite_index = sprite_index;
 		this->rotation = rotation;
+		this->box = {-3, 3, -3, 3};
 	}	
 
 	void move_bullet(float elapsed);
