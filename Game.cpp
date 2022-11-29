@@ -506,7 +506,14 @@ std::vector<MapObject> Game::create_map() {
 	};
 
 	// Animations (Probably somewhere better to put this and organize this code, just putting it here for now)	
-	std::vector<SPRITE> clock_animation = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	
+	std::vector<SPRITE> clock_animation1 = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	std::vector<SPRITE> clock_animation2 = {rw1, rw2, rw3, rw4, rw5, rw6, rw7, rw8};
+	std::vector<std::vector<SPRITE>*> animations = {
+		&clock_animation1,
+		&clock_animation2
+	};
+		
 	for (auto p : red_walls) {
 		MapObject m(p.x, p.y, p.s); 
 		m.anim.init(clock_animation, CLOCK_ANIMATION_SPEED, true, true);
