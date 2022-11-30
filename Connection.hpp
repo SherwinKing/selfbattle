@@ -65,6 +65,26 @@ int main(int argc, char **argv) {
 #include <string>
 #include <functional>
 
+const int lan_helper_port = 15466;
+
+class LANServerHelper {
+public:
+	LANServerHelper();
+	~LANServerHelper();
+
+	Socket broadcast_udp_sock;
+
+	void broadcast_beacon();
+	std::string get_server_ip();
+};
+
+class LANClientHelper {
+public:
+	LANClientHelper();
+
+	std::string discover_server();
+};
+
 //Thin wrapper around a (polling-based) TCP socket connection:
 struct Connection {
 	//Helper that will append any type to the send buffer:
