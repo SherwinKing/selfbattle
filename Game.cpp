@@ -22,7 +22,6 @@ std::unordered_map<enum SPRITE, BoundingBox> sprite_bounding_box_map = {
 	{SPRITE::PLAYER_SPRITE_BLUE, character_box},
 	{SPRITE::CLONE_SPRITE_RED, character_box},
 	{SPRITE::CLONE_SPRITE_BLUE, character_box},
-	{SPRITE::WALL_SPRITE, { -100.0f, 100.0f, -100.0f, 100.0f }},
 	{SPRITE::BULLET_SPRITE, { -2.0f, 2.0f, -2.0f, 2.0f }},
 	{SPRITE::FENCE_SELF_H, { -80.0f, 80.0f, -50.0f, 50.0f }},
 	{SPRITE::FENCE_SELF_V, { -50.0f, 50.0f, -80.0f, 80.0f }},
@@ -64,7 +63,6 @@ Game::Game() : mt(0x15466666) {
 		std::pair(SPRITE::PLAYER_SPRITE_BLUE, "sprites/player_sprite_blue.png"),
 		std::pair(SPRITE::CLONE_SPRITE_RED, "sprites/clone_sprite_red.png"),
 		std::pair(SPRITE::CLONE_SPRITE_BLUE, "sprites/clone_sprite_blue.png"),
-		std::pair(SPRITE::WALL_SPRITE, "sprites/wall.png"),
 		std::pair(SPRITE::BULLET_SPRITE, "sprites/bullet.png"),	
 		std::pair(SPRITE::FENCE_SELF_H, "sprites/fence_self_h.png"),
 		std::pair(SPRITE::FENCE_SELF_V, "sprites/fence_self_v.png"),
@@ -98,7 +96,6 @@ Game::Game() : mt(0x15466666) {
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_2, "sprites/player_sprite_reload_blue_2.png"),
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3, "sprites/player_sprite_reload_blue_3.png"),
 		std::pair(SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4, "sprites/player_sprite_reload_blue_4.png"),
-		std::pair(SPRITE::BACKGROUND, "sprites/bg.png"),
 		std::pair(SPRITE::START, "sprites/start.png"),
 		std::pair(SPRITE::END, "sprites/end.png")
 	};
@@ -113,7 +110,7 @@ Game::Game() : mt(0x15466666) {
 		common_data->sprites.emplace_back(s);
 	}
 
-	common_data->map = Map(create_map(), create_bg());
+	common_data->map = Map(create_map());
 
 	common_data->characters.reserve(2);
 	Character c1(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
@@ -142,10 +139,6 @@ Game::Game() : mt(0x15466666) {
 
 SPRITE Game::create_start() { return SPRITE::START; }
 SPRITE Game::create_end() { return SPRITE::END; }
-
-MapObject Game::create_bg() {
-	return MapObject(BACKGROUND_X, BACKGROUND_Y, SPRITE::BACKGROUND); 
-}
 
 std::vector<MapObject> Game::create_map() {
 	std::vector<MapObject> objs;
