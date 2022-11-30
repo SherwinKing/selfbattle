@@ -212,8 +212,10 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 
 	float center_x = w / 2.f;
 	float center_y = h / 2.f;
-	world_x = character->x + 2*(screen_x - center_x); 
-	world_y = character->y - 2*(screen_y - center_y);
+	// world_x = character->x + 2*(screen_x - center_x); 
+	// world_y = character->y - 2*(screen_y - center_y);
+	world_x = character->x + (screen_x - center_x); 
+	world_y = character->y - (screen_y - center_y);
 	// std::cout << "input: " << std::to_string(screen_x) << ", " << std::to_string(screen_y) << "\n";
 	// std::cout << "output: " << std::to_string(world_x) << ", " << std::to_string(world_y) << "\n";
 }
@@ -257,9 +259,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// Game start
 	else if (!game.ready) {
 		img_renderer.render_image(common_data->sprites[SPRITE::START], 0.f, 0.f, 0.f);	
-		text_renderer.render_text("Self Battle", -0.2f, 0.4f, START_TEXT_COLOR, 100);
-		text_renderer.render_text("A two player shooter!", -0.45f, -0.1f, START_TEXT_COLOR, 100);
-		text_renderer.render_text("Press _ to start", -0.25f, -0.4f, START_TEXT_COLOR, 80);
+		// text_renderer.render_text("Self Battle", -0.2f, 0.4f, START_TEXT_COLOR, 100);
+		// text_renderer.render_text("A two player shooter!", -0.45f, -0.1f, START_TEXT_COLOR, 100);
+		// text_renderer.render_text("Press _ to start", -0.25f, -0.4f, START_TEXT_COLOR, 80);
 	} else {
 		auto draw_entity = [&] (Entity &entity) {
 			float screen_x;

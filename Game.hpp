@@ -114,7 +114,7 @@ struct Game {
 
 	CommonData *common_data;
 
-	GameState state = GameOver;
+	GameState state = PlaceClones;
 	bool ready = false;
 	bool bg_drawn = false;
 
@@ -134,7 +134,6 @@ struct Game {
 	SPRITE create_start();
 	SPRITE create_end();
 	std::vector<MapObject> create_map();
-	MapObject create_bg();
 
 	void update_place_clones(float elapsed);
 	void update_find_clones(float elapsed);
