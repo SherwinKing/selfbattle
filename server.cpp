@@ -32,19 +32,26 @@ int main(int argc, char **argv) {
 
 	//------------ argument parsing ------------
 
-	if (argc < 2) {
-		std::cerr << "Usage:\n\t./server [<host>] <port>" << std::endl;
-		return 1;
-	}
+	// if (argc < 2) {
+	// 	std::cerr << "Usage:\n\t./server [<host>] <port>" << std::endl;
+	// 	return 1;
+	// }
 
+	bool should_broadcast_beacon = false;
+	LANServerHelper lan_helper;
 	std::string host;
 	std::string port;
 	if (argc >= 3) {
 		host = argv[1];
 		port = argv[2];
-	} else {
+	} else if (argc == 2) {
 		host = "127.0.0.1";
 		port = argv[1];
+	} else {
+		should_broadcast_beacon = true;
+		port = "15666";
+		lan_helper.broadcast_beacon();
+		host = lan_helper.get_server_ip();
 	}
 
 	//------------ initialization ------------
@@ -68,6 +75,11 @@ int main(int argc, char **argv) {
 			if (remain < 0.0) {
 				next_tick += std::chrono::duration< double >(Game::Tick);
 				break;
+			}
+
+			// Use UDP to broadcast the server's existence for server discovery
+			if (should_broadcast_beacon) {
+				lan_helper.broadcast_beacon();
 			}
 
 			//helper used on client close (due to quit) and server close (due to error):

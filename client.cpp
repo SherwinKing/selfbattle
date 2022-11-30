@@ -34,10 +34,10 @@ int main(int argc, char **argv) {
 	try {
 #endif
 	//------------ command line arguments ------------
-	if (argc < 2 || argc > 3) {
-		std::cerr << "Usage:\n\t./client [<host>] <port>" << std::endl;
-		return 1;
-	}
+	// if (argc < 2 || argc > 3) {
+	// 	std::cerr << "Usage:\n\t./client [<host>] <port>" << std::endl;
+	// 	return 1;
+	// }
 
 	//------------ connect to server --------------
 	std::string host;
@@ -45,9 +45,13 @@ int main(int argc, char **argv) {
 	if (argc >= 3) {
 		host = argv[1];
 		port = argv[2];
-	} else {
+	} else if (argc == 2) {
 		host = "127.0.0.1";
 		port = argv[1];
+	} else {
+		port = "15666";
+		LANClientHelper lan_helper;
+		host = lan_helper.discover_server();
 	}
 	Client client(host, port);
 
