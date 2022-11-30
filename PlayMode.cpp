@@ -220,6 +220,21 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
+	// formatting time manually because I wasn't able to find a library function
+	auto float_to_string = [](float f) {
+		std::string text = std::to_string(f);
+		int period_index = 0;
+		for (int i = 0; i < text.size(); i++) {
+			if (text[i] == '.') {
+				period_index = i;
+				break;
+			}
+		}
+		text = text.substr(0, period_index + 3);
+
+		return text;
+	};
+
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
@@ -249,8 +264,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		text_renderer.render_text(deaths1, -0.52f, -0.2f, END_TEXT_COLOR, 50);
 		text_renderer.render_text(deaths2, .28f, -0.2f, END_TEXT_COLOR, 50);
 
-		std::string score1 = "Score: " + std::to_string(35.0f);
-		std::string score2 = "Score: " + std::to_string(35.0f);
+		std::string score1 = "Score: " + float_to_string(35.0f);
+		std::string score2 = "Score: " + float_to_string(35.0f);
 		text_renderer.render_text(score1, -0.52f, -0.4f, END_TEXT_COLOR, 50);
 		text_renderer.render_text(score2, .28f, -0.4f, END_TEXT_COLOR, 50);
 	}
@@ -259,7 +274,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		img_renderer.render_image(common_data->sprites[SPRITE::START], 0.f, 0.f, 0.f);	
 		text_renderer.render_text("Self Battle", -0.2f, 0.4f, START_TEXT_COLOR, 100);
 		text_renderer.render_text("A two player shooter!", -0.45f, -0.1f, START_TEXT_COLOR, 100);
-		text_renderer.render_text("Press _ to start", -0.25f, -0.4f, START_TEXT_COLOR, 80);
+		if (!player->ready) {
+			text_renderer.render_text("Press _ to start", -0.25f, -0.4f, START_TEXT_COLOR, 80);
+		}
+		else {
+			text_renderer.render_text("Waiting for the other player...", -0.6f, -0.4f, START_TEXT_COLOR, 80);
+		}
 	} else {
 		auto draw_entity = [&] (Entity &entity) {
 			float screen_x;
@@ -320,20 +340,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		}
 
 		text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
-		// formatting time manually because I wasn't able to find a library function
-		auto float_to_string = [](float f) {
-			std::string text = std::to_string(f);
-			int period_index = 0;
-			for (int i = 0; i < text.size(); i++) {
-				if (text[i] == '.') {
-					period_index = i;
-					break;
-				}
-			}
-			text = text.substr(0, period_index + 3);
-
-			return text;
-		};
 
 		std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
 		text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);

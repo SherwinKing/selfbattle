@@ -114,7 +114,7 @@ struct Game {
 
 	CommonData *common_data;
 
-	GameState state = GameOver;
+	GameState state = PlaceClones;
 	bool ready = false;
 	bool bg_drawn = false;
 
