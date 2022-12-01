@@ -28,6 +28,7 @@ constexpr float BULLET_INTERVAL = 0.8f;
 // Radius/width. Currently images are 100x100 so enough far away so it won't hit
 // player when you click
 constexpr float PLAYER_SIZE = 71.f;
+constexpr float VOLUME = 0.3f;
 
 
 // constexpr float PLACE_CLONE_PHASE_DURATION = 30.f;

@@ -620,7 +620,7 @@ void Player::try_shooting() {
 	c.anim.playing = true;
 
 	// Begin playing shooting audio
-	Sound::play(*shooting_sample, 1.0f, 0);
+	Sound::play(*shooting_sample, VOLUME, 0);
 
 	glm::vec2 shoot_velo;
 	shoot_velo.x = mouse_x - c.x;

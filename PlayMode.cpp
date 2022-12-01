@@ -21,7 +21,7 @@ Load< Sound::Sample > background_sample(LoadTagDefault, []() -> Sound::Sample co
 PlayMode::PlayMode(Client &client_) : client(client_) {
 	common_data = CommonData::get_instance();
 	text_renderer = TextRenderer("font/Roboto/Roboto-Regular.ttf");
-	background_music = Sound::loop(*background_sample, 1.0f, 0);
+	background_music = Sound::loop(*background_sample, VOLUME, 0);
 	if (single_player) {
 		std::cout << "Playing in Single Player Mode.\n";
 		player = &game.players[0];
