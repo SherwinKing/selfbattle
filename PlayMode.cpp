@@ -222,10 +222,11 @@ void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const 
 
 	float center_x = w / 2.f;
 	float center_y = h / 2.f;
-	// world_x = character->x + 2*(screen_x - center_x); 
-	// world_y = character->y - 2*(screen_y - center_y);
-	world_x = character->x + (screen_x - center_x); 
-	world_y = character->y - (screen_y - center_y);
+	// needed on mac TODO: fix this
+	world_x = character->x + 2*(screen_x - center_x); 
+	world_y = character->y - 2*(screen_y - center_y);
+	// world_x = character->x + (screen_x - center_x); 
+	// world_y = character->y - (screen_y - center_y);
 	// std::cout << "input: " << std::to_string(screen_x) << ", " << std::to_string(screen_y) << "\n";
 	// std::cout << "output: " << std::to_string(world_x) << ", " << std::to_string(world_y) << "\n";
 }
