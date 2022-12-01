@@ -212,7 +212,7 @@ void LANServerHelper::broadcast_beacon() {
 
 	// Send data
 	std::string message = "Hello, this is a server!";
-	if (sendto(broadcast_udp_sock, message.c_str(), message.size(), 0, reinterpret_cast< struct sockaddr * >(&addr), sizeof(addr)) < 0) {
+	if (sendto(broadcast_udp_sock, message.c_str(), static_cast<int>(message.size()), 0, reinterpret_cast< struct sockaddr * >(&addr), sizeof(addr)) < 0) {
 		std::cerr << "Failed to send UDP broadcast." << std::endl;
 		std::exit(1);
 	}
@@ -231,7 +231,10 @@ std::string LANServerHelper::get_server_ip() {
 		std::cerr << "Failed to get self address." << std::endl;
 		std::exit(1);
 	}
-	return inet_ntoa(self_addr.sin_addr);
+	// return InetNtop(self_addr.sin_addr);
+	char str[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &(self_addr.sin_addr), str, INET_ADDRSTRLEN);
+	return std::string(str);
 }
 
 LANClientHelper::LANClientHelper() {
@@ -259,11 +262,6 @@ std::string LANClientHelper::discover_server() {
 	}
 	// Set socket to reuse port
 	int reuse = 1;
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast< const char * >(&reuse), sizeof(reuse)) < 0) {
-		std::cerr << "Failed to set UDP socket options." << std::endl;
-		closesocket(sock);
-		std::exit(1);
-	}
 	// Set socket to reuse address
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast< const char * >(&reuse), sizeof(reuse)) < 0) {
 		std::cerr << "Failed to set UDP socket options." << std::endl;
@@ -297,12 +295,14 @@ std::string LANClientHelper::discover_server() {
 		std::exit(1);
 	}
 	std::cout << "Received: " << buffer << std::endl;
-	std::cout << "Server: " << inet_ntoa(sender.sin_addr) << std::endl;
 
 	// Close socket and unbind port
 	closesocket(sock);
-
-	return inet_ntoa(sender.sin_addr);
+	
+	char str[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &(sender.sin_addr), str, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(sender.sin_addr), str, INET_ADDRSTRLEN);
+	return std::string(str);
 }
 
 

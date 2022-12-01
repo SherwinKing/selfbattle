@@ -280,8 +280,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		text_renderer.render_text(deaths1, -0.52f, -0.2f, END_TEXT_COLOR, 50);
 		text_renderer.render_text(deaths2, .28f, -0.2f, END_TEXT_COLOR, 50);
 
-		std::string score1 = "Score: " + float_to_string(p1.score);
-		std::string score2 = "Score: " + float_to_string(p2.score);
+		std::string score1 = "Score: " + std::to_string(p1.score);
+		std::string score2 = "Score: " + std::to_string(p2.score);
 		text_renderer.render_text(score1, -0.52f, -0.4f, END_TEXT_COLOR, 50);
 		text_renderer.render_text(score2, .28f, -0.4f, END_TEXT_COLOR, 50);
 	}
