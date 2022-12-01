@@ -113,8 +113,8 @@ Game::Game() : mt(0x15466666) {
 	common_data->map = Map(create_map());
 
 	common_data->characters.reserve(2);
-	Character c1(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
-	Character c2(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1);
+	Character c1(PLAYER1_STARTING_X, PLAYER1_STARTING_Y, SPRITE::PLAYER_SPRITE_RED, 0);
+	Character c2(PLAYER0_STARTING_X, PLAYER0_STARTING_Y, SPRITE::PLAYER_SPRITE_BLUE, 1);
 	c1.box = character_box;
 	c2.box = character_box;
 	auto rl1 = SPRITE::PLAYER_SPRITE_RELOAD_RED_1;
@@ -676,7 +676,11 @@ void Game::remove_player(Player *player) {
 
 void Game::setup_place_clones() {
 	state = PlaceClones;
-	time_remaining = PLACE_CLONE_PHASE_DURATION;
+	common_data->characters[0].x = PLAYER1_STARTING_X;
+	common_data->characters[0].y = PLAYER1_STARTING_Y;
+	common_data->characters[1].x = PLAYER0_STARTING_X;
+	common_data->characters[1].y = PLAYER0_STARTING_Y;
+	
 }
 
 void Game::update_place_clones(float elapsed) {
@@ -698,10 +702,10 @@ void Game::setup_find_clones() {
 	time_elapsed = 0;
 	state = FindClones;
 	time_remaining = FIND_CLONE_PHASE_DURATION;
-	common_data->characters[0].x = PLAYER1_STARTING_X;
-	common_data->characters[0].y = PLAYER1_STARTING_Y;
-	common_data->characters[1].x = PLAYER0_STARTING_X;
-	common_data->characters[1].y = PLAYER0_STARTING_Y;
+	common_data->characters[0].x = PLAYER0_STARTING_X;
+	common_data->characters[0].y = PLAYER0_STARTING_Y;
+	common_data->characters[1].x = PLAYER1_STARTING_X;
+	common_data->characters[1].y = PLAYER1_STARTING_Y;
 
 	// Setup the shadows
 	common_data->shadows.resize(common_data->characters.size());
@@ -750,10 +754,10 @@ void Game::update_find_clones(float elapsed) {
 void Game::setup_kill_clones() {
 	state = KillClones;
 	time_remaining = KILL_CLONE_PHASE_DURATION;
-	common_data->characters[0].x = PLAYER1_STARTING_X;
-	common_data->characters[0].y = PLAYER1_STARTING_Y;
-	common_data->characters[1].x = PLAYER0_STARTING_X;
-	common_data->characters[1].y = PLAYER0_STARTING_Y;
+	common_data->characters[0].x = PLAYER0_STARTING_X;
+	common_data->characters[0].y = PLAYER0_STARTING_Y;
+	common_data->characters[1].x = PLAYER1_STARTING_X;
+	common_data->characters[1].y = PLAYER1_STARTING_Y;
 
 	time_elapsed = 0;
 
@@ -814,7 +818,6 @@ void Game::update_kill_clones(float elapsed) {
 			if (bullet.collide(clone)) {
 				clone.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
-
 				if (clone.hp <= 0) {
 					common_data->characters[clone.player_id].score++;
 				}
@@ -831,9 +834,16 @@ void Game::update_kill_clones(float elapsed) {
 			}
 		}
 		for (Character &character : common_data->characters) {
-			if (bullet.collide(character)) {
-				character.take_damage(BULLET_DAMAGE);
+			if (!character.dead && bullet.collide(character)) {
 				bullet.active = false;
+				if (character.take_damage(BULLET_DAMAGE)) {
+					character.deaths++;	
+					character.score -= 1;
+					auto other_id = character.player_id == 0 ? 1 : 0;	
+					Character &other = common_data->characters[other_id];
+					other.kills += 1;
+					other.score += 1;
+				}
 			}
 		}
 
@@ -845,6 +855,20 @@ void Game::update_kill_clones(float elapsed) {
 		}
 		if (bullet.lifetime > BULLET_LIFETIME) {
 			bullet.active = false;;
+		}
+	}
+
+	for (Character &character : common_data->characters) {
+		if (character.dead) {
+			character.dead_timer -= elapsed;
+			if (character.dead_timer < 0.f) {
+				printf("Respawning...\n");
+				character.dead = false;	
+				character.x = character.player_id == 0 ? PLAYER0_STARTING_X : PLAYER1_STARTING_X;
+				character.y = character.player_id == 0 ? PLAYER1_STARTING_Y : PLAYER1_STARTING_Y;
+				character.dead_timer = PLAYER_RESPAWN_TIME;
+				character.hp = PLAYER_STARTING_HEALTH;
+			}
 		}
 	}
 
@@ -878,6 +902,7 @@ void Game::update_kill_clones(float elapsed) {
 void Game::update(float elapsed) {
 	// wait if players haven't arrived yet
 	if (!ready) {
+		setup_place_clones();
 		return;
 	}
 	if (state == GameOver) {
@@ -965,6 +990,8 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 		connection.send(character.sprite_index);
 		connection.send(character.hp);
 		connection.send(character.rotation);
+		connection.send(character.kills);
+		connection.send(character.deaths);
 	};
 
 	auto send_player = [&](Player const &player) {
@@ -998,7 +1025,8 @@ void Game::send_message(Connection *connection_, Player *connection_player, MESS
 			break;
 		case MESSAGE::PLAYER_UPDATE:
 			connection.send(connection_player->player_id);
-			connection.send(common_data->characters[connection_player->player_id].rotation);
+			send_character(common_data->characters[connection_player->player_id]);
+			// connection.send(common_data->characters[connection_player->player_id].rotation);
 			break;
 		default:
 			std::cout << "this should not happen\n";
@@ -1044,6 +1072,9 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 		read(&character->sprite_index);
 		read(&character->hp);
 		read(&character->rotation);
+		read(&character->kills);
+		read(&character->deaths);
+		
 	};
 
 	auto read_player = [&](Player *player) {
@@ -1104,7 +1135,8 @@ MESSAGE Game::recv_message(Connection *connection_, Player *client_player, bool 
 			break;
 		case MESSAGE::PLAYER_UPDATE:
 			read(&client_player->player_id);
-			read(&common_data->characters[client_player->player_id].rotation);
+			read_character(&common_data->characters[client_player->player_id]);
+			// read(&common_data->characters[client_player->player_id].rotation);
 			if (is_server) {
 				message_queue.push_back(MessageInfo(MESSAGE::PLAYER_UPDATE, client_player->player_id));
 			}

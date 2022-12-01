@@ -72,7 +72,11 @@ struct CharacterSnapshot {
 struct Character : Entity {
     float hp = PLAYER_STARTING_HEALTH;
 	uint8_t player_id;
-	uint32_t score = 0;
+	int32_t score = 0;
+	bool dead = false;
+	float dead_timer = PLAYER_RESPAWN_TIME;
+	uint32_t deaths = 0;
+	uint32_t kills = 0;
 
 	// Phase1 (Place clones) replay buffer
 	std::deque<CharacterSnapshot> phase1_replay_buffer;

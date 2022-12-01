@@ -24,7 +24,7 @@ PlayMode::PlayMode(Client &client_) : client(client_) {
 		game.ready = true;
 	}
 	else {
-		std::cout << "Playing in Miltiplayer Mode.\n";
+		std::cout << "Playing in Multiplayer Mode.\n";
 	}
 }
 
@@ -49,7 +49,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		}
 	}
-
+	
 	if (!game.ready) {
 		return false;
 	}
@@ -58,6 +58,9 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		return false;
 	}
 
+	if (common_data->characters[player->player_id].dead) {
+		return false;
+	}
 	// TODO: store info to message queue
 	if (evt.type == SDL_MOUSEBUTTONDOWN) {
 		player->mouse.state = Button::BTN_DOWN;
@@ -236,23 +239,25 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	if (game.state == GameOver) {
+		Character& p1 = common_data->characters[0];
+		Character& p2 = common_data->characters[1];
 		img_renderer.render_image(common_data->sprites[SPRITE::END], 0.f, 0.f, 0.f);	
 		text_renderer.render_text("Statistics", -0.2f, 0.4f, END_TEXT_COLOR, 100);
 		text_renderer.render_text("Player 1", -0.52f, .2f, END_TEXT_COLOR, 70);
 		text_renderer.render_text("Player 2", .28f, 0.2f, END_TEXT_COLOR, 70);
 		
-		std::string kills1 = "Kills: " + std::to_string(3);
-		std::string kills2 = "Kills: " + std::to_string(2);
+		std::string kills1 = "Kills: " + std::to_string(p1.kills);
+		std::string kills2 = "Kills: " + std::to_string(p2.kills);
 		text_renderer.render_text(kills1, -0.52f, 0.0f, END_TEXT_COLOR, 50);
 		text_renderer.render_text(kills2, .28f, 0.0f, END_TEXT_COLOR, 50);
 
-		std::string deaths1 = "Deaths: " + std::to_string(2);
-		std::string deaths2 = "Deaths: " + std::to_string(3);
+		std::string deaths1 = "Deaths: " + std::to_string(p1.deaths);
+		std::string deaths2 = "Deaths: " + std::to_string(p2.deaths);
 		text_renderer.render_text(deaths1, -0.52f, -0.2f, END_TEXT_COLOR, 50);
 		text_renderer.render_text(deaths2, .28f, -0.2f, END_TEXT_COLOR, 50);
 
-		std::string score1 = "Score: " + std::to_string(35.0f);
-		std::string score2 = "Score: " + std::to_string(35.0f);
+		std::string score1 = "Score: " + std::to_string(p1.score);
+		std::string score2 = "Score: " + std::to_string(p2.score);
 		text_renderer.render_text(score1, -0.52f, -0.4f, END_TEXT_COLOR, 50);
 		text_renderer.render_text(score2, .28f, -0.4f, END_TEXT_COLOR, 50);
 	}
@@ -262,7 +267,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		// text_renderer.render_text("Self Battle", -0.2f, 0.4f, START_TEXT_COLOR, 100);
 		// text_renderer.render_text("A two player shooter!", -0.45f, -0.1f, START_TEXT_COLOR, 100);
 		// text_renderer.render_text("Press _ to start", -0.25f, -0.4f, START_TEXT_COLOR, 80);
-	} else {
+	} else if (character != nullptr && common_data->characters[player->player_id].dead) {
+		float time_remaining = common_data->characters[player->player_id].dead_timer;
+		std::string respawn = "Respawning in " + std::to_string(time_remaining);
+		text_renderer.render_text(respawn, -0.52f, 0.0f, RESPAWN_TEXT_COLOR, 50);
+	} 
+	else {
 		auto draw_entity = [&] (Entity &entity) {
 			float screen_x;
 			float screen_y;
@@ -286,7 +296,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		*/
 
 		for (Character& c : common_data->characters) {
-			draw_entity(c);
+			if (!c.dead) {
+				draw_entity(c);
+			}
 		}
 
 		for (Bullet& bullet : common_data->bullets) {
@@ -321,7 +333,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				break;
 		}
 
-		text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		// text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 		// formatting time manually because I wasn't able to find a library function
 		auto float_to_string = [](float f) {
 			std::string text = std::to_string(f);
@@ -337,16 +349,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			return text;
 		};
 
-		std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
-		text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
+		// std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
+		// text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
 		
 		std::string time_text = float_to_string(game.time_remaining);
 		text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
-		std::string hp_text = "HP: " + float_to_string(character->hp);
+		std::string hp_text = "HP: " + float_to_string(common_data->characters[player->player_id].hp);
 		text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 		
-		std::string score_text = "Score: " + std::to_string(character->score);
+		std::string score_text = "Score: " + std::to_string(common_data->characters[player->player_id].score);
 		text_renderer.render_text(hp_text, 0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 	}
 	
