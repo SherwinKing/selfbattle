@@ -628,8 +628,8 @@ void Player::try_shooting() {
 	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
 
 	common_data->bullets.emplace_back(Bullet(c.x, c.y, SPRITE::BULLET_SPRITE, shoot_velo, player_id, c.rotation));	
-	float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 1);
-	common_data->bullets.back().move_bullet(amount_to_move);
+	// float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 0.5f);
+	// common_data->bullets.back().move_bullet(amount_to_move);
 } 
 
 void Player::place_clone() {
@@ -842,6 +842,9 @@ void Game::update_kill_clones(float elapsed) {
 		bullet.move_bullet(elapsed);
 		for (Clone &clone : common_data->clones) {
 			if (bullet.collide(clone)) {
+				if (bullet.player_id != clone.player_id) {
+					continue;
+				}
 				clone.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
 				if (clone.hp <= 0) {
@@ -850,6 +853,10 @@ void Game::update_kill_clones(float elapsed) {
 			}
 		}
 		for (Shadow &shadow : common_data->shadows) {
+			if (bullet.player_id != shadow.player_id) {
+				continue;
+			}
+
 			if (bullet.collide(shadow)) {
 				shadow.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
@@ -860,6 +867,10 @@ void Game::update_kill_clones(float elapsed) {
 			}
 		}
 		for (Character &character : common_data->characters) {
+			if (bullet.player_id != character.player_id) {
+				continue;
+			}
+
 			if (!character.dead && bullet.collide(character)) {
 				bullet.active = false;
 				if (character.take_damage(BULLET_DAMAGE)) {
