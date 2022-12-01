@@ -364,6 +364,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				break;
 		}
 
+		// TODO: add latency
+
 		text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 		
 		std::string time_text = float_to_string(game.time_remaining);
