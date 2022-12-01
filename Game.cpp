@@ -141,6 +141,8 @@ Game::Game() : mt(0x15466666) {
 	players.reserve(2);
 	players.emplace_back(Player(0));
 	players.emplace_back(Player(1));
+
+	assert(PLACE_CLONE_PHASE_DURATION > 0.f);
 }
 
 SPRITE Game::create_start() { return SPRITE::START; }
