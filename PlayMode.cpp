@@ -371,10 +371,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 		if (game.state == KillClones) {
 			std::string hp_text = "HP: " + float_to_string(character->hp);
-			text_renderer.render_text(hp_text, 0.7f, -0.5f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+			text_renderer.render_text(hp_text, 0.5f, -0.5f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 			
 			std::string score_text = "Score: " + std::to_string(character->score);
-			text_renderer.render_text(score_text, 0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+			text_renderer.render_text(score_text, 0.5f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 			int your_clone_cnt = 0;
 			int enemy_clone_cnt = 0;
@@ -394,10 +394,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 					enemy_clone_cnt++;
 				}
 			}
-			std::string your_clone_text = "You have " + std::to_string(your_clone_cnt) + "clones left to kill!";
+			std::string your_clone_text = "You have " + std::to_string(your_clone_cnt) + " clones left to kill!";
 			text_renderer.render_text(your_clone_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
-			std::string enemy_clone_text = "Protect the " + std::to_string(enemy_clone_cnt) + "enemy clones.";
+			std::string enemy_clone_text = "Protect the " + std::to_string(enemy_clone_cnt) + " enemy clones.";
 			text_renderer.render_text(enemy_clone_text, -0.7f, -0.8f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 		}
 	}

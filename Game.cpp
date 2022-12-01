@@ -670,6 +670,14 @@ glm::vec2 Player::get_direction() {
 	return dir;
 }
 
+void Player::reset_controls(){
+	left.state = Button::State::NONE;
+	right.state = Button::State::NONE;
+	up.state = Button::State::NONE;
+	down.state = Button::State::NONE;
+	mouse.state = Button::State::NONE;
+}
+
 void Game::remove_player(Player *player) {
 	bool found = false;
 	for (auto pi = players.begin(); pi != players.end(); ++pi) {
@@ -855,10 +863,11 @@ void Game::update_kill_clones(float elapsed) {
 			if (!character.dead && bullet.collide(character)) {
 				bullet.active = false;
 				if (character.take_damage(BULLET_DAMAGE)) {
-					character.deaths++;	
+					character.deaths++;
 					character.score -= 1;
 					auto other_id = character.player_id == 0 ? 1 : 0;	
 					Character &other = common_data->characters[other_id];
+					players[character.player_id].reset_controls();
 					other.kills += 1;
 					other.score += 1;
 				}
