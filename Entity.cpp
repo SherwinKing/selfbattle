@@ -39,17 +39,33 @@ bool Entity::collide(Entity& other) {
 }
 
 void Character::move_character(float dx, float dy) {
-	
-	move(dx, dy);
 
 	CommonData *common_data = CommonData::get_instance();
 	
 	int section_id = common_data->map.get_section_id(x, y);
-	for (auto mapobj : common_data->map.sections[section_id])
-	{
-		if (collide(mapobj)) {
-			move(-dx, -dy);
-			return;
+	auto collides_with_map = [&] () {
+		for (auto mapobj : common_data->map.sections[section_id]) {
+			if (collide(mapobj)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	
+	move(dx, dy);
+	if (collides_with_map()) {
+		move(-dx, -dy);
+		
+		// try x direction alone
+		move(dx, 0.f);
+		if (collides_with_map()) {
+		move(-dx, 0.f);
+
+			// try y direction alone
+			move(0.f, dy);
+			if (collides_with_map()) {
+				move(0.f, -dy);
+			}
 		}
 	}
 }
