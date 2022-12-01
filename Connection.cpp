@@ -24,6 +24,7 @@ typedef int ssize_t;
 #include <netinet/ip.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <stdlib.h>     /* exit */
 
 #define closesocket close
 
@@ -181,6 +182,131 @@ void poll_connections(
 		
 }
 
+//-------------
+
+
+LANServerHelper::LANServerHelper() {
+	//------------ setting up the UDP broadcast server ------------
+	broadcast_udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (broadcast_udp_sock == InvalidSocket) {
+		std::cerr << "Failed to create UDP broadcast socket." << std::endl;
+		std::exit(1);
+	}
+	// Set socket options
+	int broadcast = 1;
+	if (setsockopt(broadcast_udp_sock, SOL_SOCKET, SO_BROADCAST, reinterpret_cast< const char * >(&broadcast), sizeof(broadcast)) < 0) {
+		std::cerr << "Failed to set UDP broadcast socket options." << std::endl;
+		std::exit(1);
+	}
+}
+
+void LANServerHelper::broadcast_beacon() {
+	// UDP sendto broadcast
+
+	// Set destination address
+	struct sockaddr_in addr = {0};
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(lan_helper_port);
+	addr.sin_addr.s_addr = INADDR_BROADCAST;
+
+	// Send data
+	std::string message = "Hello, this is a server!";
+	if (sendto(broadcast_udp_sock, message.c_str(), message.size(), 0, reinterpret_cast< struct sockaddr * >(&addr), sizeof(addr)) < 0) {
+		std::cerr << "Failed to send UDP broadcast." << std::endl;
+		std::exit(1);
+	}
+}
+
+LANServerHelper::~LANServerHelper() {
+	// Close socket
+	closesocket(broadcast_udp_sock);
+}
+
+std::string LANServerHelper::get_server_ip() {
+	// Get the address of self
+	struct sockaddr_in self_addr = {0};
+	socklen_t self_addr_len = sizeof(self_addr);
+	if (getsockname(broadcast_udp_sock, reinterpret_cast< struct sockaddr * >(&self_addr), &self_addr_len) < 0) {
+		std::cerr << "Failed to get self address." << std::endl;
+		std::exit(1);
+	}
+	return inet_ntoa(self_addr.sin_addr);
+}
+
+LANClientHelper::LANClientHelper() {
+
+}
+
+std::string LANClientHelper::discover_server() {
+	std::cout << "Discovering server..." << std::endl;
+	// The following codes are written with help of Copilot
+	// Receive beacon
+	// Create a socket
+	Socket sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock == InvalidSocket) {
+		std::cerr << "Failed to create UDP socket." << std::endl;
+		closesocket(sock);
+		std::exit(1);
+	}
+	
+	// Set socket options
+	int broadcast = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, reinterpret_cast< const char * >(&broadcast), sizeof(broadcast)) < 0) {
+		std::cerr << "Failed to set UDP socket options." << std::endl;
+		closesocket(sock);
+		std::exit(1);
+	}
+	// Set socket to reuse port
+	int reuse = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast< const char * >(&reuse), sizeof(reuse)) < 0) {
+		std::cerr << "Failed to set UDP socket options." << std::endl;
+		closesocket(sock);
+		std::exit(1);
+	}
+	// Set socket to reuse address
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast< const char * >(&reuse), sizeof(reuse)) < 0) {
+		std::cerr << "Failed to set UDP socket options." << std::endl;
+		closesocket(sock);
+		std::exit(1);
+	}
+
+	// Set destination address
+	struct sockaddr_in addr = {0};
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(lan_helper_port);
+	addr.sin_addr.s_addr = INADDR_ANY;
+
+	// Bind socket
+	auto bind_result = bind(sock, reinterpret_cast< struct sockaddr * >(&addr), sizeof(addr));
+	if (bind_result < 0) {
+		std::cerr << "Failed to bind UDP socket, port: " << addr.sin_port <<". Bind return: " << bind_result << ", errno " << errno << std::endl;
+		closesocket(sock);
+		std::exit(1);
+	}
+
+	// Receive data and get sender address
+	char buffer[1024];
+	struct sockaddr_in sender = {0};
+	socklen_t sender_len = sizeof(sender);
+	int bytes = recvfrom(sock, buffer, 1024, 0,  reinterpret_cast< struct sockaddr * >(&sender), &sender_len);
+	if (bytes < 0) {
+		std::cerr << "Failed to receive UDP data." << std::endl;
+		closesocket(sock);
+		std::exit(1);
+	}
+	std::cout << "Received: " << buffer << std::endl;
+	std::cout << "Server: " << inet_ntoa(sender.sin_addr) << std::endl;
+
+	// Close socket and unbind port
+	closesocket(sock);
+
+	return inet_ntoa(sender.sin_addr);
+}
+
+
+
 //---------------------------------
 
 
@@ -294,6 +420,31 @@ void Server::poll(std::function< void(Connection *, Connection::Event event) > c
 	}
 }
 
+// void broadcast_beacon() {
+// 	// UDP sendto broadcast
+
+// 	// Send data
+// 	std::string message = "Hello, World!";
+// 	std::cout << "Sending " << message << std::endl;
+// 	if (sendto(broadcast_udp_sock, message.c_str(), message.size(), 0, reinterpret_cast< struct sockaddr * >(&addr), sizeof(addr)) < 0) {
+// 		throw std::runtime_error("Failed to send data");
+// 	}
+
+// 	// Get the address of self
+// 	struct sockaddr_in self_addr;
+// 	socklen_t self_addr_len = sizeof(self_addr);
+// 	if (getsockname(sock, reinterpret_cast< struct sockaddr * >(&self_addr), &self_addr_len) < 0) {
+// 		throw std::runtime_error("Failed to get self address");
+// 	}
+	
+
+// 	// Reset 
+
+// 	// Close socket
+// 	closesocket(broadcast_udp_sock);
+// }
+
+
 Client::Client(std::string const &host, std::string const &port) : connections(1), connection(connections.front()) {
 	#ifdef _WIN32
 	{ //init winsock:
@@ -303,6 +454,7 @@ Client::Client(std::string const &host, std::string const &port) : connections(1
 		}
 	}
 	#endif
+
 
 	{ //use getaddrinfo to look up how to bind to host/port:
 		struct addrinfo hints;

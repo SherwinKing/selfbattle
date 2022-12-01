@@ -34,10 +34,10 @@ int main(int argc, char **argv) {
 	try {
 #endif
 	//------------ command line arguments ------------
-	if (argc < 2 || argc > 3) {
-		std::cerr << "Usage:\n\t./client [<host>] <port>" << std::endl;
-		return 1;
-	}
+	// if (argc < 2 || argc > 3) {
+	// 	std::cerr << "Usage:\n\t./client [<host>] <port>" << std::endl;
+	// 	return 1;
+	// }
 
 	//------------ connect to server --------------
 	std::string host;
@@ -45,9 +45,13 @@ int main(int argc, char **argv) {
 	if (argc >= 3) {
 		host = argv[1];
 		port = argv[2];
-	} else {
+	} else if (argc == 2) {
 		host = "127.0.0.1";
 		port = argv[1];
+	} else {
+		port = "15666";
+		LANClientHelper lan_helper;
+		host = lan_helper.discover_server();
 	}
 	Client client(host, port);
 
@@ -74,7 +78,7 @@ int main(int argc, char **argv) {
 	SDL_Window *window = SDL_CreateWindow(
 		"gp22 game6: multiplayer", //TODO: remember to set a title for your game!
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-		1920, 1080, //TODO: modify window size if you'd like
+		1280, 720, //TODO: modify window size if you'd like
 		SDL_WINDOW_OPENGL
 		| SDL_WINDOW_RESIZABLE //uncomment to allow resizing
 		| SDL_WINDOW_ALLOW_HIGHDPI //uncomment for full resolution on high-DPI screens

@@ -56,12 +56,16 @@ void Character::move_character(float dx, float dy) {
 
 bool Character::take_damage(float damage) {
 	hp -= damage;
-	return hp < 0.f;
+	if (hp <= 0.f) {
+		hp = 0.f;	
+		dead = true;
+	}
+	return hp <= 0.f;
 }
 
 bool Clone::take_damage(float damage) {
 	hp -= damage;
-	return hp < 0.f;
+	return hp <= 0.f;
 }
 
 void Bullet::move_bullet(float elapsed) {
