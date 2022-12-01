@@ -4,6 +4,8 @@
 #include "gl_errors.hpp"
 #include "data_path.hpp"
 #include "hex_dump.hpp"
+#include "Sound.hpp"
+#include "Load.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -12,9 +14,14 @@
 #include <array>
 #include <chrono>
 
+Load< Sound::Sample > background_sample(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("audio/funshine.wav"));
+});
+
 PlayMode::PlayMode(Client &client_) : client(client_) {
 	common_data = CommonData::get_instance();
 	text_renderer = TextRenderer("font/Roboto/Roboto-Regular.ttf");
+	background_music = Sound::loop(*background_sample, 1.0f, 0);
 	if (single_player) {
 		std::cout << "Playing in Single Player Mode.\n";
 		player = &game.players[0];
@@ -342,18 +349,41 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		}
 
 		text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
-
-		std::string c0_text = "character 0: (" + float_to_string(common_data->characters[0].x) + ", " + float_to_string(common_data->characters[0].y) + "), rotation: " + float_to_string(common_data->characters[0].rotation);
-		text_renderer.render_text(c0_text, -0.8f, 0.3f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 60);
 		
 		std::string time_text = float_to_string(game.time_remaining);
 		text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
-		std::string hp_text = "HP: " + float_to_string(character->hp);
-		text_renderer.render_text(hp_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
-		
-		std::string score_text = "Score: " + std::to_string(character->score);
-		text_renderer.render_text(hp_text, 0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		if (game.state == KillClones) {
+			std::string hp_text = "HP: " + float_to_string(character->hp);
+			text_renderer.render_text(hp_text, 0.7f, -0.5f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+			
+			std::string score_text = "Score: " + std::to_string(character->score);
+			text_renderer.render_text(score_text, 0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+
+			int your_clone_cnt = 0;
+			int enemy_clone_cnt = 0;
+			for (Clone& clone : common_data->clones) {
+				if (clone.player_id == player_id) {
+					your_clone_cnt++;
+				}
+				else {
+					enemy_clone_cnt++;
+				}
+			}
+			for (Shadow& shadow : common_data->shadows) {
+				if (shadow.player_id == player_id) {
+					your_clone_cnt++;
+				}
+				else {
+					enemy_clone_cnt++;
+				}
+			}
+			std::string your_clone_text = "You have " + std::to_string(your_clone_cnt) + "clones left to kill!";
+			text_renderer.render_text(your_clone_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+
+			std::string enemy_clone_text = "Protect the " + std::to_string(enemy_clone_cnt) + "enemy clones.";
+			text_renderer.render_text(enemy_clone_text, -0.7f, -0.8f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		}
 	}
 	
 

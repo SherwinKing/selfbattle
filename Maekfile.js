@@ -140,10 +140,6 @@ const client_names = [
 	maek.CPP('PlayMode.cpp'),
 	maek.CPP('LitColorTextureProgram.cpp'),
 	//maek.CPP('ColorTextureProgram.cpp'),  //not used right now, but you might want it
-	maek.CPP('Sound.cpp'),
-	maek.CPP('load_wav.cpp'),
-	maek.CPP('load_opus.cpp'),
-	
 ];
 
 const server_names = [
@@ -169,7 +165,12 @@ const common_names = [
 	maek.CPP('ImageRenderer.cpp'),
 	maek.CPP('TextRenderer.cpp'),
 	maek.CPP('Entity.cpp'),
-	maek.CPP('Animation.cpp')
+	maek.CPP('Animation.cpp'),
+	// The sound files should only be in client, 
+	// but they are now in server temporarily because it's in game.hpp
+	maek.CPP('Sound.cpp'),
+	maek.CPP('load_wav.cpp'),
+	maek.CPP('load_opus.cpp'),
 ];
 
 const show_meshes_names = [

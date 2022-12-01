@@ -111,6 +111,7 @@ struct Game {
 
 	std::mt19937 mt; //used for spawning players
 	uint32_t player_cnt = 0; //used for naming players
+	int round = 0;
 
 	CommonData *common_data;
 

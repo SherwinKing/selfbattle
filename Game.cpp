@@ -9,6 +9,8 @@
 #include <random>
 
 #include "hex_dump.hpp"
+#include "Sound.hpp"
+#include "Load.hpp"
 
 #include <glm/gtx/norm.hpp>
 
@@ -56,6 +58,10 @@ std::unordered_map<enum SPRITE, BoundingBox> sprite_bounding_box_map = {
 	{SPRITE::PLAYER_SPRITE_RELOAD_BLUE_3, character_box},
 	{SPRITE::PLAYER_SPRITE_RELOAD_BLUE_4, character_box},
 };
+
+Load< Sound::Sample > shooting_sample(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("audio/shooting.wav"));
+});
 
 Game::Game() : mt(0x15466666) {
 	std::vector<std::pair<uint32_t, const char *>> sprite_paths = {
@@ -613,6 +619,9 @@ void Player::try_shooting() {
 	// Being playing shooting animation
 	c.anim.playing = true;
 
+	// Begin playing shooting audio
+	Sound::play(*shooting_sample, 1.0f, 0);
+
 	glm::vec2 shoot_velo;
 	shoot_velo.x = mouse_x - c.x;
 	shoot_velo.y = mouse_y - c.y;
@@ -750,12 +759,21 @@ void Game::update_find_clones(float elapsed) {
 void Game::setup_kill_clones() {
 	state = KillClones;
 	time_remaining = KILL_CLONE_PHASE_DURATION;
-	common_data->characters[0].x = PLAYER1_STARTING_X;
-	common_data->characters[0].y = PLAYER1_STARTING_Y;
-	common_data->characters[1].x = PLAYER0_STARTING_X;
-	common_data->characters[1].y = PLAYER0_STARTING_Y;
+	if (round % 2 == 0) {
+		common_data->characters[0].x = PLAYER1_STARTING_X;
+		common_data->characters[0].y = PLAYER1_STARTING_Y;
+		common_data->characters[1].x = PLAYER0_STARTING_X;
+		common_data->characters[1].y = PLAYER0_STARTING_Y;
+	}
+	else {
+		common_data->characters[1].x = PLAYER1_STARTING_X;
+		common_data->characters[1].y = PLAYER1_STARTING_Y;
+		common_data->characters[0].x = PLAYER0_STARTING_X;
+		common_data->characters[0].y = PLAYER0_STARTING_Y;
+	}
 
 	time_elapsed = 0;
+	round++;
 
 	// // Setup the shadows
 	// common_data->shadows.resize(common_data->characters.size());

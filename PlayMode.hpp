@@ -6,6 +6,7 @@
 #include "Game.hpp"
 #include "ImageRenderer.hpp"
 #include "TextRenderer.hpp"
+#include "Sound.hpp"
 
 #include <glm/glm.hpp>
 
@@ -31,6 +32,8 @@ struct PlayMode : Mode {
 	Player *player = nullptr;
 	Character *character = nullptr;
 	bool single_player = false;
+
+	std::shared_ptr< Sound::PlayingSample > background_music;
 
 	CommonData *common_data;
 
