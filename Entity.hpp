@@ -117,7 +117,7 @@ struct Bullet : Entity {
 	bool active = true;
 
 	Bullet() = default;
-	Bullet(float start_x, float start_y, SPRITE sprite_index, glm::vec2& bullet_velo, int shooter_id, float rotation) {
+	Bullet(float start_x, float start_y, SPRITE sprite_index, glm::vec2& bullet_velo, int player_id, float rotation) {
 		velo = bullet_velo;
 		x = start_x;
 		y = start_y;

@@ -627,7 +627,7 @@ void Player::try_shooting() {
 	shoot_velo.y = mouse_y - c.y;
 	shoot_velo = glm::normalize(shoot_velo) * BULLET_SPEED;
 
-	common_data->bullets.emplace_back(Bullet(c.x, c.y, SPRITE::BULLET_SPRITE, shoot_velo, player_id, c.rotation));	
+	common_data->bullets.emplace_back(Bullet(c.x, c.y, SPRITE::BULLET_SPRITE, shoot_velo, player_id, c.rotation));
 	// float amount_to_move = static_cast<float>(static_cast<uint32_t>(PLAYER_SIZE / BULLET_SPEED) + 0.5f);
 	// common_data->bullets.back().move_bullet(amount_to_move);
 } 
