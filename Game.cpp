@@ -867,7 +867,7 @@ void Game::update_kill_clones(float elapsed) {
 			}
 		}
 		for (Character &character : common_data->characters) {
-			if (bullet.player_id != character.player_id) {
+			if (bullet.player_id == character.player_id) {
 				continue;
 			}
 
