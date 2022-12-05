@@ -58,8 +58,8 @@ public:
 	ImageRenderer(uint32_t window_width, uint32_t window_height);
 
 	inline void resize(uint32_t window_width, uint32_t window_height) {
-		sx = 2.0f / window_width;
-		sy = 2.0f / window_height;
+		sx = 2.0f / 1920;
+		sy = 2.0f / 1080;
 	}
 
 	void render_image(const ImageData & image_data, float x, float y, float rotation_radians = 0.0f);

@@ -60,8 +60,8 @@ public:
 	TextRenderer(uint32_t window_width, uint32_t window_height, std::string font_file_path_from_dist);
 
 	inline void resize(uint32_t window_width, uint32_t window_height) {
-		sx = 2.0f / window_width;
-		sy = 2.0f / window_height;
+		sx = 2.0f / 1920;
+		sy = 2.0f / 1080;
 	}
 
 	inline float get_line_height_by_font_size(uint32_t font_size) {
