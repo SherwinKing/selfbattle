@@ -53,13 +53,20 @@ private:
 	float sx;
 	float sy;
 
+	float width_ratio_to_1920 = 1.0f;
+	float height_ratio_to_1080 = 1.0f;
+
 public:
 	ImageRenderer();
 	ImageRenderer(uint32_t window_width, uint32_t window_height);
 
 	inline void resize(uint32_t window_width, uint32_t window_height) {
+
 		sx = 2.0f / 1920;
 		sy = 2.0f / 1080;
+
+		width_ratio_to_1920 = (float)window_width / 1920.0f;
+		height_ratio_to_1080 = (float)window_height / 1080.0f;
 	}
 
 	void render_image(const ImageData & image_data, float x, float y, float rotation_radians = 0.0f);
