@@ -90,15 +90,19 @@ int main(int argc, char **argv) {
 	} else {
 		std::cout << "\nNo IP detected from argument\n";
 		std::cout << "Attempting to collect IP through command line...\n";
+	#ifdef _WIN32
 		std::string ip_command = R"( ipconfig /release | grep -E "IPv4" )";
-		// std::string ip_command = R"( ifconfig en0 | grep -E "inet ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}) " | awk '{print $2}' )";
-		host = exec(ip_command.c_str());
-		// removing \n and space
-		// host.erase(remove(host.begin(), host.end(), '\n'), host.end());
-   		// host.erase(remove(host.begin(), host.end(), ' '), host.end())
-		std::cout << "Host IP: " << host << "\n";
+		std::string ips = exec(ip_command.c_str());
+		std::cout << "Host IP: \n" << ips << "\n";
 		std::cout << "Please enter your host's IP: ";
 		std::getline(std::cin, host);
+	#else
+		std::string ip_command = R"( ifconfig en0 | grep -E "inet ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}) " | awk '{print $2}' )";
+		host = exec(ip_command.c_str());
+		// removing \n and space
+		host.erase(remove(host.begin(), host.end(), '\n'), host.end());
+   		host.erase(remove(host.begin(), host.end(), ' '), host.end());
+	#endif
 
 		port = "1234";
 		// should_broadcast_beacon = true;
