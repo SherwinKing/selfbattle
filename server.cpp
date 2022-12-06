@@ -11,9 +11,46 @@
 #include <cassert>
 #include <unordered_map>
 
+#include <cstdio>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
+
 #ifdef _WIN32
 extern "C" { uint32_t GetACP(); }
 #endif
+
+// execute command in c++
+// https://stackoverflow.com/questions/52164723/how-to-execute-a-command-and-get-return-code-stdout-and-stderr-of-command-in-c
+std::string exec(const char* cmd)
+{
+    std::array<char, 128> buffer;
+    std::string result;
+    auto pipe = popen(cmd, "r");
+    
+    if (!pipe) throw std::runtime_error("popen() failed!");
+    
+    while (!feof(pipe))
+    {
+        if (fgets(buffer.data(), 128, pipe) != nullptr)
+            result += buffer.data();
+    }
+    
+    auto rc = pclose(pipe);
+    
+    if (rc == EXIT_SUCCESS)
+    {
+        std::cout << "SUCCESS\n";
+    }
+    else
+    {
+        std::cout << "FAILED\n";
+    }
+    
+    return result;
+}
+
 int main(int argc, char **argv) {
 #ifdef _WIN32
 	{ //when compiled on windows, check that code page is forced to utf-8 (makes file loading/saving work right):
@@ -45,13 +82,22 @@ int main(int argc, char **argv) {
 		host = argv[1];
 		port = argv[2];
 	} else if (argc == 2) {
-		host = "127.0.0.1";
-		port = argv[1];
+		host = argv[1];
+		port = "1234";
 	} else {
-		should_broadcast_beacon = true;
-		port = "15666";
-		lan_helper.broadcast_beacon();
-		host = lan_helper.get_server_ip();
+		std::cout << "\nNo IP detected from argument\n";
+		std::cout << "Attempting to collect IP through command line...\n";
+		std::string ip_command = R"( ifconfig en0 | grep -E "inet ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}) " | awk '{print $2}' )";
+		host = exec(ip_command.c_str());
+		// removing \n and space
+		host.erase(remove(host.begin(), host.end(), '\n'), host.end());
+   		host.erase(remove(host.begin(), host.end(), ' '), host.end());
+		std::cout << "Host IP: " << host << "\n";
+		port = "1234";
+		// should_broadcast_beacon = true;
+		// port = "15666";
+		// lan_helper.broadcast_beacon();
+		// host = lan_helper.get_server_ip();
 	}
 
 	//------------ initialization ------------

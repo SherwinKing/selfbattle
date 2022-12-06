@@ -40,18 +40,23 @@ int main(int argc, char **argv) {
 	// }
 
 	//------------ connect to server --------------
-	std::string host;
-	std::string port;
-	if (argc >= 3) {
+	std::string host = "";
+	std::string port = "";
+	if (argc == 3) {
 		host = argv[1];
 		port = argv[2];
 	} else if (argc == 2) {
-		host = "127.0.0.1";
-		port = argv[1];
+		host = argv[1];
+		port = "1234";
 	} else {
-		port = "15666";
-		LANClientHelper lan_helper;
-		host = lan_helper.discover_server();
+		do {
+			std::cout << "Please enter your host's IP: ";
+			std::getline(std::cin, host);
+		} while (host == "");
+		port = "1234";
+		// port = "15666";
+		// LANClientHelper lan_helper;
+		// host = lan_helper.discover_server();
 	}
 	Client client(host, port);
 
@@ -76,7 +81,7 @@ int main(int argc, char **argv) {
 
 	//create window:
 	SDL_Window *window = SDL_CreateWindow(
-		"gp22 game6: multiplayer", //TODO: remember to set a title for your game!
+		"Self Battle", //TODO: remember to set a title for your game!
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		1280, 720, //TODO: modify window size if you'd like
 		SDL_WINDOW_OPENGL
