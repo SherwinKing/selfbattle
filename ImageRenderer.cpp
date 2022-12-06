@@ -74,11 +74,11 @@ ImageRenderer::ImageRenderer()
 void ImageRenderer::render_image(const ImageData & image_data, float x, float y, float rotation_radians) {
 	uint32_t image_width = image_data.size.x;
 	uint32_t image_height = image_data.size.y;
-
-	float render_left = x - image_width * sx / 2.0f;
-	float render_bottom = y - image_height * sy / 2.0f;
-	float render_right = x + image_width * sx / 2.0f;
-	float render_top = y + image_height * sy / 2.0f;
+	
+	float render_left = x * width_ratio_to_1920 - image_width * sx / 2.0f;
+	float render_bottom = y * height_ratio_to_1080 - image_height * sy / 2.0f;
+	float render_right = x * width_ratio_to_1920 + image_width * sx / 2.0f;
+	float render_top = y * height_ratio_to_1080 + image_height * sy / 2.0f;
 	glm::vec4 bottom_left = glm::vec4(render_left, render_bottom, 0.0f, 1.0f);
 	glm::vec4 bottom_right = glm::vec4(render_right, render_bottom, 1.0f, 1.0f);
 	glm::vec4 top_left = glm::vec4(render_left, render_top, 1.0f, 1.0f);
