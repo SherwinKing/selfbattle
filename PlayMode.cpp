@@ -294,7 +294,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			text_renderer.render_text("Press _ to start", -0.27f, -0.5f, START_TEXT_COLOR, 80);
 		}
 		else {
-			text_renderer.render_text("Waiting for the other player...", -0.45f, -0.4f, START_TEXT_COLOR, 80);
+			text_renderer.render_text("Waiting for the other player...", -0.5f, -0.5f, START_TEXT_COLOR, 80);
 		}
 	}
 	// Dead
