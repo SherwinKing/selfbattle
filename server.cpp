@@ -19,6 +19,9 @@
 
 #ifdef _WIN32
 extern "C" { uint32_t GetACP(); }
+#define popen _popen
+#define pclose _pclose
+#define WEXITSTATUS
 #endif
 
 // execute command in c++
@@ -74,8 +77,8 @@ int main(int argc, char **argv) {
 	// 	return 1;
 	// }
 
-	bool should_broadcast_beacon = false;
-	LANServerHelper lan_helper;
+	// bool should_broadcast_beacon = false;
+	// LANServerHelper lan_helper;
 	std::string host;
 	std::string port;
 	if (argc >= 3) {
@@ -87,12 +90,16 @@ int main(int argc, char **argv) {
 	} else {
 		std::cout << "\nNo IP detected from argument\n";
 		std::cout << "Attempting to collect IP through command line...\n";
-		std::string ip_command = R"( ifconfig en0 | grep -E "inet ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}) " | awk '{print $2}' )";
+		std::string ip_command = R"( ipconfig /release | grep -E "IPv4" )";
+		// std::string ip_command = R"( ifconfig en0 | grep -E "inet ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}) " | awk '{print $2}' )";
 		host = exec(ip_command.c_str());
 		// removing \n and space
-		host.erase(remove(host.begin(), host.end(), '\n'), host.end());
-   		host.erase(remove(host.begin(), host.end(), ' '), host.end());
+		// host.erase(remove(host.begin(), host.end(), '\n'), host.end());
+   		// host.erase(remove(host.begin(), host.end(), ' '), host.end())
 		std::cout << "Host IP: " << host << "\n";
+		std::cout << "Please enter your host's IP: ";
+		std::getline(std::cin, host);
+
 		port = "1234";
 		// should_broadcast_beacon = true;
 		// port = "15666";
@@ -124,9 +131,11 @@ int main(int argc, char **argv) {
 			}
 
 			// Use UDP to broadcast the server's existence for server discovery
+			/*
 			if (should_broadcast_beacon) {
 				lan_helper.broadcast_beacon();
 			}
+			*/
 
 			//helper used on client close (due to quit) and server close (due to error):
 			auto remove_connection = [&](Connection *c) {
