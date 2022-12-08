@@ -208,12 +208,14 @@ void PlayMode::update(float elapsed) {
 }
 
 void PlayMode::world_to_opengl(float world_x, float world_y, glm::uvec2 const &screen_size, float& screen_x, float& screen_y) {
-	float w = static_cast<float>(screen_size.x);
-	float h = static_cast<float>(screen_size.y);
+	// float w = static_cast<float>(screen_size.x);
+	// float h = static_cast<float>(screen_size.y);
 
 	// Between -1 and 1	
-	screen_x = ((world_x - character->x) / w) * 2.f;	
-	screen_y = ((world_y - character->y) / h) * 2.f;
+	// screen_x = ((world_x - character->x) / w) * 2.f;	
+	// screen_y = ((world_y - character->y) / h) * 2.f;
+	screen_x = ((world_x - character->x) / 1920.f) * 2.f;	
+	screen_y = ((world_y - character->y) / 1080.f) * 2.f;
 }
 
 void PlayMode::screen_to_world(float screen_x, float screen_y, glm::uvec2 const &screen_size, float& world_x, float& world_y) {
