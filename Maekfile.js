@@ -166,6 +166,7 @@ const common_names = [
 	maek.CPP('TextRenderer.cpp'),
 	maek.CPP('Entity.cpp'),
 	maek.CPP('Animation.cpp'),
+	maek.CPP('GP22IntroMode.cpp'),
 	// The sound files should only be in client, 
 	// but they are now in server temporarily because it's in game.hpp
 	maek.CPP('Sound.cpp'),
