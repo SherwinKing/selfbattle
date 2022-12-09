@@ -366,10 +366,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 		// TODO: add latency
 
-		text_renderer.render_text(game_state_text, -0.7f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		text_renderer.render_text(game_state_text, -0.8f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 		
 		std::string time_text = float_to_string(game.time_remaining);
-		text_renderer.render_text(time_text, 0.5f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+		text_renderer.render_text(time_text, 0.6f, 0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 		if (game.state == KillClones) {
 			std::string hp_text = "HP: " + float_to_string(character->hp);
@@ -397,10 +397,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				}
 			}
 			std::string your_clone_text = "You have " + std::to_string(your_clone_cnt) + " clones left to kill!";
-			text_renderer.render_text(your_clone_text, -0.7f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+			text_renderer.render_text(your_clone_text, -0.8f, -0.5f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
 			std::string enemy_clone_text = "Protect the " + std::to_string(enemy_clone_cnt) + " enemy clones.";
-			text_renderer.render_text(enemy_clone_text, -0.7f, -0.8f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+			text_renderer.render_text(enemy_clone_text, -0.8f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 		}
 	}
 	
