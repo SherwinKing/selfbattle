@@ -808,14 +808,14 @@ void Game::update_kill_clones(float elapsed) {
 	time_remaining -= elapsed;	
 	time_elapsed += elapsed;
 	if (time_remaining < 0) {
-		printf("Time is up!\n");
+		std::cout << "Time is up!\n";
 		state = GameOver;
 		return;
 	}
 
 	// Replay character in phase 1 as shadow
 	for (Character &c : common_data->characters) {
-		while (c.phase1_replay_buffer_2.size() > 0) {
+		while (c.phase1_replay_buffer_2.size() > 1) {
 			const auto & first_snapshot = c.phase1_replay_buffer_2[0];
 
 			// Stop replaying if we've reached the current time
@@ -823,13 +823,15 @@ void Game::update_kill_clones(float elapsed) {
 				break;
 			}
 
-			// Replay the snapshot
-			common_data->shadows[c.player_id].x = first_snapshot.x;
-			common_data->shadows[c.player_id].y = first_snapshot.y;
-
 			// Remove the snapshot
 			c.phase1_replay_buffer_2.pop_front();
 		}
+
+		const auto & first_snapshot = c.phase1_replay_buffer_2[0];
+
+		// Replay the snapshot
+		common_data->shadows[c.player_id].x = first_snapshot.x;
+		common_data->shadows[c.player_id].y = first_snapshot.y;
 	}
 
 	// TODO: win condition
@@ -850,7 +852,7 @@ void Game::update_kill_clones(float elapsed) {
 				clone.take_damage(BULLET_DAMAGE);
 				bullet.active = false;
 				if (clone.hp <= 0) {
-					common_data->characters[clone.player_id].score++;
+					common_data->characters[clone.player_id].score += 10;
 				}
 			}
 		}
@@ -864,7 +866,7 @@ void Game::update_kill_clones(float elapsed) {
 				bullet.active = false;
 
 				if (shadow.hp <= 0) {
-					common_data->characters[shadow.player_id].score++;
+					common_data->characters[shadow.player_id].score += 10;
 				}
 			}
 		}
@@ -936,6 +938,32 @@ void Game::update_kill_clones(float elapsed) {
 
 	for (Player &player : players) {
 		player.shoot_interval -= elapsed;
+	}
+
+	int player_0_clone_cnt = 0;
+	int player_1_clone_cnt = 0;
+	// if a player has no clones, end the game
+	for (Clone clone : common_data->clones) {
+		if (clone.player_id == 0) {
+			player_0_clone_cnt++;
+		}
+		else {
+			player_1_clone_cnt++;
+		}
+	}
+	for (Shadow shadow : common_data->shadows) {
+		if (shadow.player_id == 0) {
+			player_0_clone_cnt++;
+		}
+		else {
+			player_1_clone_cnt++;
+		}
+	}
+	
+	if (player_0_clone_cnt == 0 || player_1_clone_cnt == 0) {
+		std::cout << "All clones killed. Game Over\n";
+		state = GameOver;
+		return;
 	}
 }
 
