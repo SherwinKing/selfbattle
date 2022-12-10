@@ -396,11 +396,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 					enemy_clone_cnt++;
 				}
 			}
-			std::string your_clone_text = "You have " + std::to_string(your_clone_cnt) + " clones left to kill!";
-			text_renderer.render_text(your_clone_text, -0.8f, -0.5f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+			// TODO: fix this
+			// std::string your_clone_text = "You have " + std::to_string(your_clone_cnt) + " clones left to kill!";
+			// text_renderer.render_text(your_clone_text, -0.8f, -0.5f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 
-			std::string enemy_clone_text = "Protect the " + std::to_string(enemy_clone_cnt) + " enemy clones.";
-			text_renderer.render_text(enemy_clone_text, -0.8f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
+			// std::string enemy_clone_text = "Protect the " + std::to_string(enemy_clone_cnt) + " enemy clones.";
+			// text_renderer.render_text(enemy_clone_text, -0.8f, -0.7f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), 80);
 		}
 	}
 	

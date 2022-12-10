@@ -129,7 +129,7 @@ struct Game {
 	//the update rate on the server:
 	inline static constexpr float Tick = 1.0f / 30.0f;
 
-	float time_remaining = PLACE_CLONE_PHASE_DURATION;
+	float time_remaining = KILL_CLONE_PHASE_DURATION;
 	// TODO: optimize
 	float time_elapsed = 0;	// Should be PLACE_CLONE_PHASE_DURATION - time_remaining. Fix later
 	
