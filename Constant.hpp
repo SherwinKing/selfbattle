@@ -35,7 +35,7 @@ constexpr float VOLUME = 0.3f;
 // constexpr float FIND_CLONE_PHASE_DURATION = 20.f;
 constexpr float PLACE_CLONE_PHASE_DURATION = 30.f;
 constexpr float FIND_CLONE_PHASE_DURATION = 20.f;
-constexpr float KILL_CLONE_PHASE_DURATION = 60.f;
+constexpr float KILL_CLONE_PHASE_DURATION = 120.f;
 
 constexpr uint32_t WINDOW_WIDTH = 1280; 
 constexpr uint32_t WINDOW_HEIGHT = 720;

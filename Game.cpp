@@ -727,19 +727,20 @@ void Game::setup_find_clones() {
 	common_data->characters[1].y = PLAYER1_STARTING_Y;
 
 	// Setup the shadows
-	common_data->shadows.resize(common_data->characters.size());
-	for (Character &c : common_data->characters) {
-		SPRITE shadow_sprite;
+	// TODO: fix this
+	// common_data->shadows.resize(common_data->characters.size());
+	// for (Character &c : common_data->characters) {
+		// SPRITE shadow_sprite;
 		// determine clone color by player id: 0 for red, 1 for blue
-		if (c.player_id == 0) {
-			shadow_sprite = SPRITE::CLONE_SPRITE_RED;
-		} else {
-			shadow_sprite = SPRITE::CLONE_SPRITE_BLUE;
-		}
-		const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
-		common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  shadow_sprite, c.player_id);
-		common_data->shadows[c.player_id].box = character_box;
-	}
+		// if (c.player_id == 0) {
+		// 	shadow_sprite = SPRITE::CLONE_SPRITE_RED;
+		// } else {
+		// 	shadow_sprite = SPRITE::CLONE_SPRITE_BLUE;
+		// }
+		// const auto & first_shadow_snapshot = c.phase1_replay_buffer[0];
+		// common_data->shadows[c.player_id] = Shadow(first_shadow_snapshot.x, first_shadow_snapshot.y,  shadow_sprite, c.player_id);
+		// common_data->shadows[c.player_id].box = character_box;
+	// }
 }
 
 void Game::update_find_clones(float elapsed) {
@@ -970,7 +971,12 @@ void Game::update_kill_clones(float elapsed) {
 void Game::update(float elapsed) {
 	// wait if players haven't arrived yet
 	if (!ready) {
-		setup_place_clones();
+		if (state == PlaceClones) {
+			setup_place_clones();
+		}
+		if (state == KillClones) {
+			setup_kill_clones();
+		}
 		return;
 	}
 	if (state == GameOver) {
