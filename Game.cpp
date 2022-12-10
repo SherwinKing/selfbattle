@@ -815,25 +815,26 @@ void Game::update_kill_clones(float elapsed) {
 	}
 
 	// Replay character in phase 1 as shadow
-	for (Character &c : common_data->characters) {
-		while (c.phase1_replay_buffer_2.size() > 1) {
-			const auto & first_snapshot = c.phase1_replay_buffer_2[0];
+	// TODO: fix this
+	// for (Character &c : common_data->characters) {
+	// 	while (c.phase1_replay_buffer_2.size() > 1) {
+	// 		const auto & first_snapshot = c.phase1_replay_buffer_2[0];
 
-			// Stop replaying if we've reached the current time
-			if (first_snapshot.timestamp > time_elapsed) {
-				break;
-			}
+	// 		// Stop replaying if we've reached the current time
+	// 		if (first_snapshot.timestamp > time_elapsed) {
+	// 			break;
+	// 		}
 
-			// Remove the snapshot
-			c.phase1_replay_buffer_2.pop_front();
-		}
+	// 		// Remove the snapshot
+	// 		c.phase1_replay_buffer_2.pop_front();
+	// 	}
 
-		const auto & first_snapshot = c.phase1_replay_buffer_2[0];
+	// 	const auto & first_snapshot = c.phase1_replay_buffer_2[0];
 
-		// Replay the snapshot
-		common_data->shadows[c.player_id].x = first_snapshot.x;
-		common_data->shadows[c.player_id].y = first_snapshot.y;
-	}
+	// 	// Replay the snapshot
+	// 	common_data->shadows[c.player_id].x = first_snapshot.x;
+	// 	common_data->shadows[c.player_id].y = first_snapshot.y;
+	// }
 
 	// TODO: win condition
 	// if (clones.size() == 0) {
@@ -961,11 +962,12 @@ void Game::update_kill_clones(float elapsed) {
 		}
 	}
 
-	if (player_0_clone_cnt == 0 || player_1_clone_cnt == 0) {
-		std::cout << "All clones killed. Game Over\n";
-		state = GameOver;
-		return;
-	}
+	// TODO: fix this
+	// if (player_0_clone_cnt == 0 || player_1_clone_cnt == 0) {
+	// 	std::cout << "All clones killed. Game Over\n";
+	// 	state = GameOver;
+	// 	return;
+	// }
 }
 
 void Game::update(float elapsed) {
